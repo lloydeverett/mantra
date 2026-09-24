@@ -183,6 +183,28 @@
     text-wrap: balance;
     color: color-mix(in srgb, var(--foreground) 78%, transparent);
   }
+  .skip {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-top: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .skip:hover, .skip:focus-visible { color: var(--foreground); border-color: var(--foreground); outline: none; }
+  .skip svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .skip.zoom svg { animation: zoom .7s ease-in-out; }
+  /* The chevrons whoosh out to the right and slide back in from the left. */
+  @keyframes zoom {
+    40% { transform: translateX(10px); opacity: 0; }
+    41% { transform: translateX(-10px); opacity: 0; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -215,6 +237,11 @@
       </div>
     </div>
     <p class="echo" id="echo"></p>
+    <button class="skip" id="skip" type="button" title="Skip break" aria-label="Skip break">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" />
+      </svg>
+    </button>
   </section>
 </main>
 
@@ -242,6 +269,7 @@
     "The best way of avenging yourself is not to become like the wrong-doer.", // 6.6
   ];
   const REST_SECONDS = 60;
+  const FF_MS = 700; // how long the skip button takes to spin the clock down
 
   const $ = (id) => document.getElementById(id);
   const text = $("mantra"), rule = $("rule"), arc = $("arc"), clock = $("clock");
@@ -249,7 +277,7 @@
   const C = 2 * Math.PI * arc.r.baseVal.value;
   arc.style.strokeDasharray = C;
 
-  let mantra, chars, phase, pos, spans, deadline, round = 0;
+  let mantra, chars, phase, pos, spans, deadline, ff, round = 0;
 
   function startTyping() {
     // New mantra each round, never the same one twice in a row.
@@ -313,19 +341,33 @@
     phase = "resting";
     $("echo").textContent = `“${mantra}”`;
     deadline = Date.now() + REST_SECONDS * 1000;
+    ff = null;
     document.body.dataset.view = "resting";
     tick();
   }
 
   // Driven by a wall-clock deadline, so it stays correct if frames are paused while hidden.
   function tick() {
-    const left = Math.max(0, deadline - Date.now());
+    let left = Math.max(0, deadline - Date.now());
+    if (ff) {
+      // Fast-forwarding: race the remaining time down to zero, accelerating as it goes.
+      const t = Math.min(1, (Date.now() - ff.at) / FF_MS);
+      left = Math.min(left, ff.from * (1 - t * t));
+    }
     arc.style.strokeDashoffset = (C * left) / (REST_SECONDS * 1000);
     const s = Math.ceil(left / 1000);
     clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     if (left > 0) requestAnimationFrame(tick);
     else setTimeout(startTyping, 900);
   }
+
+  $("skip").addEventListener("click", (e) => {
+    e.currentTarget.blur(); // so a later Space can't press it again
+    if (phase !== "resting" || ff) return;
+    replay(e.currentTarget, "zoom");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) deadline = Date.now();
+    else ff = { from: Math.max(0, deadline - Date.now()), at: Date.now() };
+  });
 
   startTyping();
 </script>
