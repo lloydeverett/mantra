@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "mantra",
+  "version": "0.1.0",
+  "identifier": "com.lloyd.mantra",
+  "build": { "frontendDist": "dist" },
+  "app": {
+    "windows": [{ "title": "Mantra", "width": 900, "height": 640 }]
+  }
+}
