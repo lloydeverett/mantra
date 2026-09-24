@@ -7,8 +7,6 @@ A desktop app that has you type a short mantra, then sit with it for a minute be
 - Type the mantra shown. Case is ignored; a wrong key shakes the line and you retry.
 - When you finish, a 60-second rest timer runs, then a new mantra appears.
 
-Mantras and rest length are at the top of the script in `dist/index.html` (`MANTRAS`, `REST_SECONDS`).
-
 ## Build
 
 Needs Rust and the [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/).
