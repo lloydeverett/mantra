@@ -19,11 +19,3 @@ cargo tauri build    # installers; needs: cargo install tauri-cli --version "^2"
 ```
 
 `just --list` shows the other tasks.
-
-## Layout
-
-- `dist/index.html`: all UI and logic (plain HTML/CSS/JS, no npm)
-- `src/main.rs`: opens the window
-- `icons/icon.svg`: source icon; `just icons` regenerates the rest
-- `scripts/drive.py`: headless WebDriver harness (see `AGENTS.md`)
-- `scripts/demo.py`: records `docs/demo.gif` headlessly (`just demo`, needs ffmpeg)
