@@ -74,7 +74,8 @@
     height: 100%;
     display: grid;
     place-items: center;
-    padding: 4rem 1.5rem;
+    /* Clears the fixed header. Shrinks on short windows so content stays centred. */
+    padding: clamp(3.25rem, 11vh, 4rem) 1.5rem;
   }
 
   /* Both views share one grid cell and crossfade. */

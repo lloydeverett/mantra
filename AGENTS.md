@@ -2,7 +2,8 @@
 
 Tauri v2 app. All UI and logic are in `dist/index.html` (plain HTML/CSS/JS, no npm). Rust in `src/main.rs` only opens the window.
 
-- Run: `cargo run`
+- Run: `cargo run` (or `just run`; `just --list` for other tasks)
+- Icons: edit `icons/icon.svg`, then `just icons` to regenerate every size. Needs `cargo install tauri-cli --version "^2" --locked`.
 - Ask before adding dependencies (crates, packages, CDN scripts).
 
 ## Feedback loop

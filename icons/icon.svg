@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Source for all app icons. Regenerate with `just icons`. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2a28"/>
+      <stop offset="1" stop-color="#141413"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#tile)"/>
+  <!-- Rest ring: faint track, three-quarter arc from twelve o'clock -->
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-opacity="0.16" stroke-width="44"/>
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-width="72"
+          stroke-linecap="round" stroke-dasharray="1413.7 1884.96"
+          transform="rotate(-90 512 512)"/>
+  <!-- Focal point -->
+  <circle cx="512" cy="512" r="76" fill="#ebebe9"/>
+</svg>
