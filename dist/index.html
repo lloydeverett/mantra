@@ -281,7 +281,17 @@
   }
 
   addEventListener("keydown", (e) => {
-    if (phase !== "typing" || e.repeat || e.ctrlKey || e.metaKey || e.key.length !== 1) return;
+    if (phase !== "typing" || e.ctrlKey || e.metaKey) return;
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (pos === 0) return;
+      spans[pos].classList.remove("current", "miss");
+      spans[--pos].classList.remove("inked");
+      spans[pos].classList.add("current");
+      rule.style.setProperty("--p", pos / chars.length);
+      return;
+    }
+    if (e.repeat || e.key.length !== 1) return;
     e.preventDefault();
     const s = spans[pos];
     if (e.key.toLowerCase() !== chars[pos].toLowerCase()) {
