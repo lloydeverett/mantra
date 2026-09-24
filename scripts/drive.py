@@ -66,8 +66,13 @@ class App:
     def js(self, script, *args):
         return self._("POST", "/execute/sync", {"script": script, "args": list(args)})
 
-    def keys(self, text):
-        actions = [a for ch in text for a in ({"type": "keyDown", "value": ch}, {"type": "keyUp", "value": ch})]
+    def keys(self, text, delay=0):
+        """Type text, pausing delay ms after each key."""
+        actions = [
+            a
+            for ch in text
+            for a in ({"type": "keyDown", "value": ch}, {"type": "keyUp", "value": ch}, {"type": "pause", "duration": delay})
+        ]
         self._("POST", "/actions", {"actions": [{"type": "key", "id": "kbd", "actions": actions}]})
 
     def shot(self, path):

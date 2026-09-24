@@ -29,3 +29,7 @@ icons:
 # Headless smoke screenshot to target/shot.png (Linux/WSL)
 shot:
     python3 scripts/drive.py
+
+# Record docs/demo.gif headlessly (Linux/WSL, needs ffmpeg)
+demo:
+    python3 scripts/demo.py
