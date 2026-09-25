@@ -7,4 +7,5 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+specialfx = { git = "https://github.com/lloydeverett/specialfx", default-features = false }
 tauri = { version = "2", features = [] }

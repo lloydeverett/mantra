@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod dim;
+
 use tauri::{window::Color, Manager, Theme, WebviewWindow, WindowEvent};
 
 // Match --background in dist/index.html so the strip exposed while the
@@ -15,6 +17,7 @@ fn paint(window: &WebviewWindow, theme: Theme) {
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
+            dim::init(app.handle());
             let window = app.get_webview_window("main").unwrap();
             paint(&window, window.theme().unwrap_or(Theme::Light));
             let w = window.clone();
@@ -25,6 +28,7 @@ fn main() {
             });
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![dim::dim])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

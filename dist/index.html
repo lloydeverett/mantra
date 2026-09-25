@@ -270,12 +270,18 @@
   ];
   const REST_SECONDS = 60;
   const FF_MS = 700; // how long the skip button takes to spin the clock down
+  const DIM = 0.55; // opacity of the black screen overlay while the mantra waits
+  const DIM_LEAD_SECONDS = 300; // darken again over this last stretch of the break
 
   const $ = (id) => document.getElementById(id);
   const text = $("mantra"), rule = $("rule"), arc = $("arc"), clock = $("clock");
 
   const C = 2 * Math.PI * arc.r.baseVal.value;
   arc.style.strokeDasharray = C;
+
+  // Darken every screen (see src/dim.rs). Keys are [seconds from now, opacity],
+  // faded linearly from the current opacity. A no-op outside Tauri.
+  const dim = (...keys) => window.__TAURI__?.core.invoke("dim", { keys });
 
   let mantra, chars, phase, pos, spans, deadline, ff, round = 0;
 
@@ -299,6 +305,7 @@
     rule.style.setProperty("--p", 0);
     $("round").textContent = `Round ${String(++round).padStart(2, "0")}`;
     document.body.dataset.view = "typing";
+    dim([0.6, DIM]);
   }
 
   // Re-trigger a CSS animation even if the class is already present.
@@ -343,6 +350,8 @@
     deadline = Date.now() + REST_SECONDS * 1000;
     ff = null;
     document.body.dataset.view = "resting";
+    // Clear, then darken back in over the end of the break.
+    dim([1.2, 0], [Math.max(1.2, REST_SECONDS - DIM_LEAD_SECONDS), 0], [REST_SECONDS, DIM]);
     tick();
   }
 
@@ -367,6 +376,7 @@
     replay(e.currentTarget, "zoom");
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) deadline = Date.now();
     else ff = { from: Math.max(0, deadline - Date.now()), at: Date.now() };
+    dim([FF_MS / 1000, DIM]);
   });
 
   startTyping();

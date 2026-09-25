@@ -1,6 +1,6 @@
 # Mantra
 
-Tauri v2 app. All UI and logic are in `dist/index.html` (plain HTML/CSS/JS, no npm). Rust in `src/main.rs` only opens the window.
+Tauri v2 app. All UI and logic are in `dist/index.html` (plain HTML/CSS/JS, no npm). Rust in `src/main.rs` only opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it).
 
 - Run: `cargo run` (or `just run`; `just --list` for other tasks)
 - Icons: edit `icons/icon.svg`, then `just icons` to regenerate every size. Needs `cargo install tauri-cli --version "^2" --locked`.
