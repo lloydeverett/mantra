@@ -15,7 +15,12 @@ fn paint(window: &WebviewWindow, theme: Theme) {
 }
 
 fn main() {
+    // Tell the page whether this is a release build, so it can pick the full break.
+    let build = tauri::plugin::Builder::<tauri::Wry>::new("build")
+        .js_init_script(format!("window.MANTRA_RELEASE = {};", !cfg!(debug_assertions)))
+        .build();
     tauri::Builder::default()
+        .plugin(build)
         .setup(|app| {
             dim::init(app.handle());
             let window = app.get_webview_window("main").unwrap();

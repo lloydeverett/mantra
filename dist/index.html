@@ -268,9 +268,9 @@
     "Every man lives the present time only, and loses only this.",         // 12.26
     "Do not waste the remainder of your life in thoughts about others.",   // 3.4
   ];
-  const REST_SECONDS = 60;
+  const REST_SECONDS = window.MANTRA_RELEASE ? 20 * 60 : 60; // short in dev builds (see src/main.rs)
   const FF_MS = 700; // how long the skip button takes to spin the clock down
-  const DIM = 0.55; // opacity of the black screen overlay while the mantra waits
+  const DIM = 0.45; // opacity of the black screen overlay while the mantra waits
   const DIM_LEAD_SECONDS = 300; // darken again over this last stretch of the break
 
   const $ = (id) => document.getElementById(id);
