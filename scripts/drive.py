@@ -24,7 +24,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APP = ROOT / "target" / "debug" / "mantra"
+APP = ROOT / "target" / "debug" / "Mantra"
 LOG = ROOT / "target" / "drive.log"
 PORT = 4444
 DISPLAY = ":99"

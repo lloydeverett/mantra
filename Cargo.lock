@@ -603,7 +603,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2911,7 +2911,7 @@ dependencies = [
 [[package]]
 name = "specialfx"
 version = "0.1.0"
-source = "git+https://github.com/lloydeverett/specialfx#1a67570a5294567ece559dd0833e8ade14c4870c"
+source = "git+https://github.com/lloydeverett/specialfx#fef9e5cd580ac0bb9472d75a4db0efc669aca39d"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4001,7 +4001,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
