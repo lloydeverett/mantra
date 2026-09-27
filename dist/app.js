@@ -5,18 +5,20 @@ import "./session.js";
 
 // Keep to ASCII so these are easy to type.
 const MANTRAS = [
+    "To strive, to seek, to find, and not to yield.",
+    "There is iron in me yet.",
+    "Be not afraid of greatness.",
+    "Celestial light, shine inward.",
+    "Claim yourself for yourself.",
     "I will not be whirled about.",
-    "I will give my whole attention to one thing.",
-    "I am going to finish what I started before I start something new.",
-    "I will decide what matters today, and let the rest wait.",
-    "I will spend my attention with purpose.",
-    "I will guard the hours that are mine.",
-    "I am going to start what I planned to start.",
-    "I am going to work on the hard thing first.",
-    "I will say no to good things to make room for the best.",
-    "I will choose where my attention goes.",
-    "I am going to close what I do not need open.",
-    "I am going to notice when I drift, and come back.",
+    "No coward soul is mine.",
+    "To live is to fight.",
+    "Dare to be wise.",
+    "Work conquers all.",
+    "Nothing from nothing.",
+    "Even higher.",
+    "Glory takes a steep and difficult path.",
+    "Onwards and upwards."
 ];
 // Placeholders for the commitment prompt. Each ends in a duration to show that one can be typed.
 const SAMPLES = [
@@ -34,7 +36,6 @@ const SAMPLES = [
     "Throw your weight around 20m",
     "Push the envelope 20m",
     "Make a splash 20m",
-    "Play devil's advocate 20m",
     "Raise a few eyebrows 20m",
 ];
 // Short in dev builds (see src/main.rs).
