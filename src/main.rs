@@ -2,7 +2,7 @@
 
 mod dim;
 
-use tauri::{window::Color, Manager, Theme, WebviewWindow, WindowEvent};
+use tauri::{webview::PageLoadEvent, window::Color, Manager, Theme, WebviewWindow, WindowEvent};
 
 // Match --background in dist/index.html so the strip exposed while the
 // webview catches up with a resize is the same colour as the page. On macOS
@@ -34,6 +34,13 @@ fn main() {
                 }
             });
             Ok(())
+        })
+        // The window starts hidden (tauri.conf.json) so it doesn't sit empty while
+        // the webview starts up and loads the page. Show it once there's a page to see.
+        .on_page_load(|webview, payload| {
+            if payload.event() == PageLoadEvent::Finished {
+                let _ = webview.window().show();
+            }
         })
         .invoke_handler(tauri::generate_handler![dim::dim])
         .run(tauri::generate_context!())
