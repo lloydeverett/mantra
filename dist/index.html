@@ -184,15 +184,17 @@
     animation: drain var(--t) linear forwards;
   }
   @keyframes drain { to { transform: scaleX(0); } }
+  /* Inline, not flex, so text-wrap can balance the chips across lines when they wrap.
+     font-size: 0 drops the whitespace between them; their margins make the gap. */
   .presets {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.4rem;
-    max-width: 34rem;
-    margin-top: 2rem;
+    text-align: center;
+    text-wrap: balance;
+    font-size: 0;
+    max-width: 34.4rem;
+    margin-top: 1.8rem;
   }
   .preset {
+    margin: 0.2rem;
     padding: 0.35rem 0.7rem;
     border: 1px solid var(--border);
     border-radius: 999px;
