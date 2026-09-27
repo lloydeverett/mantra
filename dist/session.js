@@ -2,7 +2,8 @@ import { LitElement, html, nothing } from "./vendor/lit-core.min.js";
 import { replay, emit } from "./dom.js";
 
 const FF_MS = 700; // how long End session takes to spin the clock down
-const C = 2 * Math.PI * 46; // ring circumference
+const R = 46; // ring radius, in the SVG's 100-unit viewBox
+const C = 2 * Math.PI * R;
 
 const clockText = (ms) => {
   const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
@@ -17,9 +18,10 @@ class SessionTimer extends LitElement {
 
   createRenderRoot() { return this; }
 
-  start(commitment, minutes) {
+  // duration: minutes
+  start(commitment, duration) {
     this.commitment = commitment;
-    this.total = minutes * 60_000;
+    this.total = duration * 60_000;
     this.deadline = Date.now() + this.total;
     this.ff = null;
     this.tick();
@@ -38,6 +40,11 @@ class SessionTimer extends LitElement {
     else emit(this, "ended");
   };
 
+  // Jump to ms before the end, for scripts that skip the session.
+  endIn(ms) {
+    this.deadline = Date.now() + ms;
+  }
+
   end(e) {
     e.currentTarget.blur(); // so a later Space can't press it again
     if (!this.left || this.ff) return;
@@ -53,8 +60,8 @@ class SessionTimer extends LitElement {
       <span class="kicker" aria-hidden="true">&nbsp;</span> <!-- Empty spacer: keeps the ring where it was. -->
       <div class="ring">
         <svg viewBox="0 0 100 100" aria-hidden="true">
-          <circle class="track" cx="50" cy="50" r="46" />
-          <circle class="arc" cx="50" cy="50" r="46" stroke-dasharray=${C} stroke-dashoffset=${(C * this.left) / this.total} />
+          <circle class="track" cx="50" cy="50" r=${R} />
+          <circle class="arc" cx="50" cy="50" r=${R} stroke-dasharray=${C} stroke-dashoffset=${(C * this.left) / this.total} />
         </svg>
         <div class="clock">
           <span class="time">${clockText(this.left)}</span>
@@ -62,7 +69,7 @@ class SessionTimer extends LitElement {
         </div>
       </div>
       <p class="echo">${this.commitment}</p>
-      <button class="skip" type="button" title="End session" aria-label="End session" @click=${this.end}>
+      <button class="end-session" type="button" title="End session" aria-label="End session" @click=${this.end}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" />
         </svg>

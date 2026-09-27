@@ -2,22 +2,18 @@ import { LitElement, html } from "./vendor/lit-core.min.js";
 import { parseCommitment, formatDuration } from "./commitment.js";
 import { replay, emit } from "./dom.js";
 
-// Minutes for each preset; null is Auto (the typed duration, else the default).
-const PRESETS = [null, 5, 10, 20, 30, 45, 60, 120];
-const MAX_LENGTH = 80;
+// Auto uses the duration typed in the commitment, else the default.
+const AUTO = "auto";
+// Durations in minutes, as everywhere else.
+const PRESETS = [AUTO, 5, 10, 20, 30, 45, 60, 120];
 
-// State a commitment and pick a duration before the rule drains.
-// Fires "committed" ({ text, commitment, minutes }) or "cancelled" (Escape or timeout).
+// State a commitment and pick a duration before the rule drains. Set
+// defaultDuration and seconds (the time limit) before start().
+// Fires "committed" ({ text, commitment, duration }) or "cancelled" (Escape or timeout).
 class CommitmentPrompt extends LitElement {
   static properties = { text: { state: true }, preset: { state: true }, placeholder: { state: true } };
 
   createRenderRoot() { return this; }
-
-  constructor() {
-    super();
-    this.defaultMinutes = 20;
-    this.seconds = 60;
-  }
 
   start(placeholder) {
     this.text = "";
@@ -32,18 +28,20 @@ class CommitmentPrompt extends LitElement {
     clearTimeout(this.timeout);
   }
 
-  // -> { commitment, minutes, match }, with match only when Auto uses a typed duration.
-  resolve() {
-    if (this.preset !== 0) return { commitment: this.text.trim(), minutes: PRESETS[this.preset], match: null };
-    const { commitment, duration, match } = parseCommitment(this.text);
-    return { commitment, minutes: duration ?? this.defaultMinutes, match };
+  // What Enter would commit to: { commitment, duration, match }, with match
+  // only when Auto uses a typed duration. A preset keeps the whole text.
+  chosen(parsed = parseCommitment(this.text)) {
+    const preset = PRESETS[this.preset];
+    if (preset !== AUTO) return { commitment: this.text.trim(), duration: preset, match: null };
+    return { ...parsed, duration: parsed.duration ?? this.defaultDuration };
   }
 
   render() {
     if (this.text === undefined) return;
     const t = this.text;
-    const { match } = this.resolve();
-    const auto = parseCommitment(t).duration ?? this.defaultMinutes;
+    const parsed = parseCommitment(t);
+    const { match } = this.chosen(parsed);
+    const auto = parsed.duration ?? this.defaultDuration;
     return html`
       <span class="kicker">Commit to what's next</span>
       <p class="entry" role="textbox" aria-label="Commitment" aria-placeholder=${this.placeholder}>${
@@ -58,7 +56,7 @@ class CommitmentPrompt extends LitElement {
         ${PRESETS.map((m, i) => html`
           <button type="button" class="preset" role="radio" aria-checked=${i === this.preset} tabindex="-1"
             @mousedown=${(e) => e.preventDefault()} @click=${() => (this.preset = i)}>
-            ${m === null ? html`Auto <span class="auto">${formatDuration(auto)}</span>` : formatDuration(m)}
+            ${m === AUTO ? html`Auto <span class="auto">${formatDuration(auto)}</span>` : formatDuration(m)}
           </button>`)}
       </div>
     `;
@@ -70,19 +68,20 @@ class CommitmentPrompt extends LitElement {
       this.stop();
       emit(this, "cancelled");
     } else if (e.key === "Enter") {
-      const { commitment, minutes } = this.resolve();
+      const { commitment, duration } = this.chosen();
       if (!commitment) return;
       this.stop();
-      emit(this, "committed", { text: this.text, commitment, minutes });
+      emit(this, "committed", { text: this.text, commitment, duration });
     } else if (e.key === "Tab") step(e.shiftKey ? -1 : 1);
     else if (e.key === "ArrowDown") step(1);
     else if (e.key === "ArrowUp") step(-1);
     else if (e.key === "Backspace") {
+      // The entry isn't a native input, so these editing shortcuts are ours to provide.
       if (e.ctrlKey || e.metaKey) this.text = "";
       else if (e.altKey) this.text = this.text.replace(/\S*\s*$/, "");
       else this.text = this.text.slice(0, -1);
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-      if (this.text.length < MAX_LENGTH) this.text += e.key;
+      this.text += e.key;
     } else return;
     e.preventDefault();
   }

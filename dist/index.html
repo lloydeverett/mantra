@@ -231,7 +231,7 @@
     text-wrap: balance;
     color: color-mix(in srgb, var(--foreground) 78%, transparent);
   }
-  .skip {
+  .end-session {
     display: grid;
     place-items: center;
     width: 2.5rem;
@@ -245,9 +245,9 @@
     cursor: pointer;
     transition: color .2s ease, border-color .2s ease;
   }
-  .skip:hover, .skip:focus-visible { color: var(--foreground); border-color: var(--foreground); outline: none; }
-  .skip svg { width: 1rem; height: 1rem; fill: currentColor; }
-  .skip.zoom svg { animation: zoom .7s ease-in-out; }
+  .end-session:hover, .end-session:focus-visible { color: var(--foreground); border-color: var(--foreground); outline: none; }
+  .end-session svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .end-session.zoom svg { animation: zoom .7s ease-in-out; }
   /* The chevrons whoosh out to the right and slide back in from the left. */
   @keyframes zoom {
     40% { transform: translateX(10px); opacity: 0; }

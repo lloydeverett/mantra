@@ -24,4 +24,4 @@ with drive.session() as app:   # headless=False shows it on the current display
 - `python3 scripts/drive.py`: smoke screenshot to `target/shot.png`. Driver log: `target/drive.log`.
 - CSS transitions take about 0.4s. Sleep before a screenshot, or it catches them mid-fade.
 - Keys: `drive.ENTER`, `drive.TAB`, `drive.ESCAPE`, `drive.BACKSPACE`, `drive.UP`, `drive.DOWN`.
-- Skip the session with `app.js("document.querySelector('session-timer').deadline = Date.now() + 300")`.
+- Skip the session with `app.js("document.querySelector('session-timer').endIn(300)")`.

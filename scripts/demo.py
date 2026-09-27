@@ -12,7 +12,6 @@ RAW = drive.ROOT / "target" / "demo.mkv"
 OUT = drive.ROOT / "docs" / "demo.gif"
 KEY_MS = 110
 VIEW_FADE = 1.2  # 0.9s JS delay before switching views, then the CSS fade
-SESSION = "document.querySelector('session-timer')"
 
 with drive.session() as app:
     r = app._("GET", "/window/rect")
@@ -37,8 +36,7 @@ with drive.session() as app:
     time.sleep(1)
     app.keys(drive.ENTER)
     time.sleep(1 + 3)  # a few seconds of the session
-    # Fast-forward the ring rather than jumping to 0:00.
-    app.js(f"const s = {SESSION}, t = setInterval(() => (s.deadline -= 30000) < Date.now() && clearInterval(t), 30)")
+    app.js("document.querySelector('session-timer .end-session').click()")  # spins the ring down
     time.sleep(VIEW_FADE + 1.5)  # next round appears, then the GIF loops
     rec.communicate(b"q")
 

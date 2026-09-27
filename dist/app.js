@@ -26,7 +26,7 @@ const MANTRAS = [
   "Do not waste the remainder of your life in thoughts about others.",   // 3.4
 ];
 // Short in dev builds (see src/main.rs).
-const DEFAULT_MINUTES = window.MANTRA_RELEASE ? 20 : 1; // session length when none is typed or picked
+const DEFAULT_DURATION = window.MANTRA_RELEASE ? 20 : 1; // session minutes when none is typed or picked
 const PROMPT_SECONDS = window.MANTRA_RELEASE ? 60 : 20; // time to commit before the mantra returns
 const SAMPLE = "Wash the dishes 20m"; // placeholder before the first commitment
 const PAUSE_MS = 900; // beat between a finished view and the next
@@ -59,7 +59,7 @@ class MantraApp extends LitElement {
       </header>
       <main>
         <mantra-typing class="view" @typed=${this.typed}></mantra-typing>
-        <commitment-prompt class="view" .defaultMinutes=${DEFAULT_MINUTES} .seconds=${PROMPT_SECONDS}
+        <commitment-prompt class="view" .defaultDuration=${DEFAULT_DURATION} .seconds=${PROMPT_SECONDS}
           @committed=${this.committed} @cancelled=${this.typeMantra}></commitment-prompt>
         <session-timer class="view" @ending=${(e) => dim([e.detail / 1000, DIM])}
           @ended=${() => setTimeout(() => this.newRound(), PAUSE_MS)}></session-timer>
@@ -102,12 +102,12 @@ class MantraApp extends LitElement {
   }
 
   committed(e) {
-    const { text, commitment, minutes } = e.detail;
+    const { text, commitment, duration } = e.detail;
     this.lastCommitment = text;
     this.active = null;
-    this.session.start(commitment, minutes);
+    this.session.start(commitment, duration);
     this.view = "session";
-    const s = minutes * 60;
+    const s = duration * 60;
     dim([Math.max(0, s - DIM_LEAD_SECONDS), 0], [s, DIM]);
   }
 }
