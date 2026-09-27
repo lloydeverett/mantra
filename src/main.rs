@@ -36,10 +36,13 @@ fn main() {
             Ok(())
         })
         // The window starts hidden (tauri.conf.json) so it doesn't sit empty while
-        // the webview starts up and loads the page. Show it once there's a page to see.
+        // the webview starts up and loads the page. Show it once there's a page to see,
+        // and focus it: on macOS showing it late doesn't bring the app to the front.
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Finished {
-                let _ = webview.window().show();
+                let window = webview.window();
+                let _ = window.show();
+                let _ = window.set_focus();
             }
         })
         .invoke_handler(tauri::generate_handler![dim::dim])
