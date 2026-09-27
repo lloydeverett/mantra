@@ -32,7 +32,7 @@ with drive.session() as app:
     app.keys(m[split:], KEY_MS)
 
     time.sleep(VIEW_FADE + 1)
-    app.keys("Wash the dishes 20m", KEY_MS)
+    app.keys("Poke the bear 20m", KEY_MS)
     time.sleep(1)
     app.keys(drive.ENTER)
     time.sleep(1 + 3)  # a few seconds of the session
