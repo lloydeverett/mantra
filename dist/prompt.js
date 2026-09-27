@@ -19,16 +19,22 @@ class CommitmentPrompt extends LitElement {
 
   createRenderRoot() { return this; }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // Clicks elsewhere (the presets included) mustn't take focus, or the caret, from the entry.
+    window.addEventListener("mousedown", (e) => this.open && !this.entry.contains(e.target) && e.preventDefault());
+  }
+
   async start(placeholder) {
     this.text = "";
     this.preset = 0;
     this.placeholder = placeholder;
-    this.open = true;
+    this.open = true; // from start() to stop(); nothing renders from it, so it isn't reactive
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => emit(this, "cancelled"), this.seconds * 1000);
     await this.updateComplete;
     this.entry.replaceChildren();
-    this.focus();
+    this.entry.focus();
     replay(this.querySelector(".rule"), "drain");
   }
 
@@ -42,11 +48,8 @@ class CommitmentPrompt extends LitElement {
     return this.querySelector(".entry");
   }
 
-  // Focus the entry with the caret at the end (WebKit would put it at the start).
-  focus() {
-    this.entry.focus();
-    getSelection().selectAllChildren(this.entry);
-    getSelection().collapseToEnd();
+  get started() {
+    return this.text !== undefined;
   }
 
   // What Enter would commit to: { commitment, duration, match }, with match
@@ -57,42 +60,40 @@ class CommitmentPrompt extends LitElement {
     return { ...parsed, duration: parsed.duration ?? this.defaultDuration };
   }
 
-  // Keep it one line: Enter is ours, and pasted or dropped line breaks become spaces.
+  // Keep it one line: Enter is ours, and pasted line breaks become spaces.
   beforeInput(e) {
     if (e.inputType === "insertParagraph" || e.inputType === "insertLineBreak") return e.preventDefault();
     const data = e.data ?? e.dataTransfer?.getData("text/plain");
-    if (data && /[\r\n]/.test(data)) {
-      e.preventDefault();
-      document.execCommand("insertText", false, singleLine(data)); // unlike setting text, keeps undo
-    }
+    if (!data || !/[\r\n]/.test(data)) return;
+    e.preventDefault();
+    // A drop can't be re-inserted where it landed, so multi-line drops are refused.
+    if (e.inputType !== "insertFromDrop") document.execCommand("insertText", false, singleLine(data)); // keeps undo
   }
 
   input() {
     const entry = this.entry;
-    // Any line breaks that slip through arrive as <br> or <div>; innerText reads those as newlines.
-    if (entry.childElementCount && entry.innerText.trim()) {
-      entry.textContent = singleLine(entry.innerText).trimEnd();
-      this.focus(); // rewriting the text loses the caret
-    }
+    // Line breaks that slip past beforeInput arrive as <br> or <div>. Swap each for a space
+    // in place, which leaves the caret where it was. A lone <br> at the end only holds
+    // an empty last line open, and goes with the text below.
+    for (let el; (el = [...entry.children].find((c) => !(c.tagName === "BR" && c === entry.lastChild))); )
+      el.replaceWith(" ", ...el.childNodes);
     // An emptied contenteditable can keep a stray <br>, which would hide the placeholder.
     if (!entry.textContent) entry.replaceChildren();
     this.text = entry.textContent;
   }
 
   render() {
-    if (this.text === undefined) return;
+    if (!this.started) return;
     const auto = parseCommitment(this.text).duration ?? this.defaultDuration;
     return html`
       <span class="kicker">Commit to what's next</span>
       <p class="entry" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Commitment"
         aria-multiline="false" aria-placeholder=${this.placeholder} data-placeholder=${this.placeholder}
-        @beforeinput=${this.beforeInput} @input=${this.input}
-        @blur=${() => this.open && requestAnimationFrame(() => this.open && this.focus())}></p>
+        @beforeinput=${this.beforeInput} @input=${this.input}></p>
       <div class="rule" style="--t: ${this.seconds}s" title="Time left to commit"></div>
       <div class="presets" role="radiogroup" aria-label="Duration">
         ${PRESETS.map((m, i) => html`
-          <button type="button" class="preset" role="radio" aria-checked=${i === this.preset} tabindex="-1"
-            @mousedown=${(e) => e.preventDefault()} @click=${() => (this.preset = i)}>
+          <button type="button" class="preset" role="radio" aria-checked=${i === this.preset} tabindex="-1" @click=${() => (this.preset = i)}>
             ${m === AUTO ? html`Auto <span class="auto">${formatDuration(auto)}</span>` : formatDuration(m)}
           </button>`)}
       </div>
@@ -100,7 +101,7 @@ class CommitmentPrompt extends LitElement {
   }
 
   updated() {
-    if (this.text === undefined) return;
+    if (!this.started) return;
     const { match } = this.chosen();
     const range = match && textRange(this.entry, ...match);
     if (range) CSS.highlights.set("duration", new Highlight(range));
@@ -109,7 +110,7 @@ class CommitmentPrompt extends LitElement {
 
   // Keys the entry doesn't handle itself. Typing and editing are left to the browser.
   key(e) {
-    if (e.isComposing) return;
+    if (e.isComposing || e.keyCode === 229) return; // WebKit can send the Enter ending an IME composition after it
     const step = (d) => (this.preset = (this.preset + d + PRESETS.length) % PRESETS.length);
     if (e.key === "Escape") {
       this.stop();
