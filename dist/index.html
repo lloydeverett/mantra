@@ -168,7 +168,7 @@
   }
   .entry:empty::before { content: attr(data-placeholder); color: var(--ghost); }
   /* The entry is only as wide as its placeholder, so this puts the caret at its start. */
-  .entry:empty { text-align: left; }
+  .entry:empty { width: var(--placeholder-width, auto); text-align: left; }
   ::highlight(duration) { color: var(--accent); }
   .rule.drain::after {
     --p: 1; /* stays full when motion is reduced */
