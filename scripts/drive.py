@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Drive the real app over WebDriver for quick checks. Stdlib only.
 
-Needs: apt `webkitgtk-webdriver xvfb`, and `cargo install tauri-driver`.
+Linux only. Needs the Tauri build prerequisites, apt `webkitgtk-webdriver xvfb`
+(older releases: `webkit2gtk-driver`), and `cargo install tauri-driver --locked`.
 
     import drive
     with drive.session() as app:
@@ -27,7 +28,10 @@ ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / "target" / "debug" / "Mantra"
 LOG = ROOT / "target" / "drive.log"
 PORT = 4444
+NATIVE_PORT = 4445  # tauri-driver's default for WebKitWebDriver
 DISPLAY = ":99"
+# WebDriver key codes, for App.keys
+ENTER, TAB, ESCAPE, BACKSPACE, UP, DOWN = "\ue007", "\ue004", "\ue00c", "\ue003", "\ue013", "\ue015"
 
 
 def _req(method, path, body=None):
@@ -50,8 +54,8 @@ def _wait(ready, what):
     raise TimeoutError(f"{what} did not start, see {LOG}")
 
 
-def _port_open():
-    with contextlib.suppress(OSError), socket.create_connection(("127.0.0.1", PORT), 0.2):
+def _port_open(port):
+    with contextlib.suppress(OSError), socket.create_connection(("127.0.0.1", port), 0.2):
         return True
     return False
 
@@ -100,7 +104,8 @@ def session(headless=True):
             env.update(DISPLAY=DISPLAY, GDK_BACKEND="x11")
             env.pop("WAYLAND_DISPLAY", None)
         procs.append(subprocess.Popen(["tauri-driver", "--port", str(PORT)], env=env, stdout=log, stderr=log))
-        _wait(_port_open, "tauri-driver")
+        # tauri-driver listens before the WebKitWebDriver it spawns does.
+        _wait(lambda: _port_open(PORT) and _port_open(NATIVE_PORT), "tauri-driver")
         caps = {"browserName": "wry", "tauri:options": {"application": str(APP)}}
         sid = _req("POST", "/session", {"capabilities": {"alwaysMatch": caps}})["sessionId"]
         try:

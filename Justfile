@@ -26,10 +26,14 @@ icons:
     cargo tauri icon icons/icon.svg --output icons
     Remove-Item -Recurse -Force icons/android, icons/ios
 
-# Headless smoke screenshot to target/shot.png (Linux/WSL)
+# Run the parser tests
+test:
+    node --test dist/commitment.test.js
+
+# Headless smoke screenshot to target/shot.png (Linux only)
 shot:
     python3 scripts/drive.py
 
-# Record docs/demo.gif headlessly (Linux/WSL, needs ffmpeg)
+# Record docs/demo.gif headlessly (Linux only, needs ffmpeg)
 demo:
     python3 scripts/demo.py

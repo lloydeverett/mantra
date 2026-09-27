@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record docs/demo.gif: type a mantra in the headless app while ffmpeg grabs the Xvfb display.
+"""Record docs/demo.gif: type a mantra and a commitment in the headless app while ffmpeg grabs the Xvfb display.
 
 Needs drive.py's setup plus apt `ffmpeg`. Run: python3 scripts/demo.py
 """
@@ -12,6 +12,7 @@ RAW = drive.ROOT / "target" / "demo.mkv"
 OUT = drive.ROOT / "docs" / "demo.gif"
 KEY_MS = 110
 VIEW_FADE = 1.2  # 0.9s JS delay before switching views, then the CSS fade
+SESSION = "document.querySelector('session-timer')"
 
 with drive.session() as app:
     r = app._("GET", "/window/rect")
@@ -24,16 +25,20 @@ with drive.session() as app:
     )
     time.sleep(1)
 
-    m = app.js("return mantra")
+    m = app.js("return document.querySelector('mantra-app').mantra")
     split = m.index(" ") + 1  # one typo after the first word
     app.keys(m[:split], KEY_MS)
     app.keys("z" if m[split].lower() != "z" else "x")
     time.sleep(0.8)
     app.keys(m[split:], KEY_MS)
 
-    time.sleep(VIEW_FADE + 3)  # a few seconds of the rest timer
+    time.sleep(VIEW_FADE + 1)
+    app.keys("Wash the dishes 20m", KEY_MS)
+    time.sleep(1)
+    app.keys(drive.ENTER)
+    time.sleep(1 + 3)  # a few seconds of the session
     # Fast-forward the ring rather than jumping to 0:00.
-    app.js("const t = setInterval(() => (deadline -= 2000) < Date.now() && clearInterval(t), 30)")
+    app.js(f"const s = {SESSION}, t = setInterval(() => (s.deadline -= 30000) < Date.now() && clearInterval(t), 30)")
     time.sleep(VIEW_FADE + 1.5)  # next round appears, then the GIF loops
     rec.communicate(b"q")
 

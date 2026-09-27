@@ -1,11 +1,13 @@
 # Mantra
 
-A desktop app that has you type a short mantra, then sit with it for a minute before the next one.
+A desktop app that has you type a short mantra, commit to what you'll do next, then do it for a timed session before the next one.
 
 ![demo](docs/demo.gif)
 
 - Type the mantra shown. Case is ignored; a wrong key shakes the line and you retry.
-- When you finish, a 60-second rest timer runs, then a new mantra appears.
+- Then state your commitment, e.g. `Wash the dishes 20m`. A duration typed anywhere in it (`20m`, `45min`, `1h`, `1h30m`; 1 minute to 4 hours) sets the session length. Otherwise pick a preset with Tab or ↑/↓, or leave it on Auto for 20 minutes. Enter confirms.
+- You have a minute to commit, shown by the draining line; Escape or running out of time returns you to the mantra.
+- The session counts down under your commitment, then a new mantra appears. End session skips to the end.
 
 ## Build
 

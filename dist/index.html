@@ -25,6 +25,7 @@
     --destructive: #b3261e;
     --border: rgba(26, 26, 25, 0.16);
     --ghost: color-mix(in srgb, var(--foreground) 22%, transparent);
+    --accent: #2b5f8c;
     --font-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
     --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
@@ -36,11 +37,13 @@
       --muted-foreground: #9a9a97;
       --destructive: #e5726a;
       --border: rgba(235, 235, 233, 0.16);
+      --accent: #8db8de;
     }
   }
 
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body, mantra-app { height: 100%; }
+  mantra-app { display: block; }
   body {
     margin: 0;
     overflow: hidden;
@@ -78,7 +81,7 @@
     padding: clamp(3.25rem, 11vh, 4rem) 1.5rem;
   }
 
-  /* Both views share one grid cell and crossfade. */
+  /* The views share one grid cell and crossfade. */
   .view {
     grid-area: 1 / 1;
     display: flex;
@@ -90,8 +93,9 @@
     transform: translateY(10px);
     transition: opacity .6s ease, transform .6s ease, visibility 0s linear .6s;
   }
-  [data-view="typing"] #typing,
-  [data-view="resting"] #resting {
+  [data-view="typing"] mantra-typing,
+  [data-view="prompt"] commitment-prompt,
+  [data-view="session"] session-timer {
     opacity: 1;
     visibility: visible;
     transform: none;
@@ -112,7 +116,8 @@
   }
   .ch { position: relative; transition: color .35s ease; }
   .ch.inked { color: var(--foreground); }
-  .ch.current::before {
+  .ch.current::before,
+  .caret::before {
     content: "";
     position: absolute;
     left: -1px;
@@ -149,7 +154,50 @@
     transition: transform .3s ease;
   }
 
-  /* Resting */
+  /* Commitment prompt */
+  .entry {
+    min-height: 1.3em;
+    max-width: 24ch;
+    margin: 1.25rem 0 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.6rem, 4.4vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  .entry .duration { color: var(--accent); }
+  .entry .placeholder { color: var(--ghost); }
+  .caret { position: relative; }
+  .rule.drain::after {
+    --p: 1; /* stays full when motion is reduced */
+    animation: drain var(--t) linear forwards;
+  }
+  @keyframes drain { to { transform: scaleX(0); } }
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    max-width: 34rem;
+    margin-top: 2rem;
+  }
+  .preset {
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: none;
+    color: var(--muted-foreground);
+    font: 600 0.8rem var(--font-mono);
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .preset:hover { color: var(--foreground); border-color: var(--foreground); }
+  .preset[aria-checked="true"] { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
+  .preset .auto { opacity: 0.6; }
+
+  /* Session */
   .ring {
     position: relative;
     width: clamp(11rem, 34vmin, 16rem);
@@ -212,174 +260,7 @@
 </style>
 </head>
 <body>
-<header>
-  <span class="kicker">Mantra</span>
-  <span class="kicker" id="round"></span>
-</header>
-
-<main>
-  <section class="view" id="typing">
-    <span class="kicker">Type the mantra</span>
-    <p class="mantra" id="mantra" role="img"></p>
-    <div class="rule" id="rule"></div>
-  </section>
-
-  <section class="view" id="resting">
-    <span class="kicker" aria-hidden="true">&nbsp;</span> <!-- Empty spacer: keeps the ring where it was. -->
-    <div class="ring">
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle class="track" cx="50" cy="50" r="46" />
-        <circle class="arc" id="arc" cx="50" cy="50" r="46" />
-      </svg>
-      <div class="clock">
-        <span class="time" id="clock"></span>
-        <span class="kicker">remaining</span>
-      </div>
-    </div>
-    <p class="echo" id="echo"></p>
-    <button class="skip" id="skip" type="button" title="Skip break" aria-label="Skip break">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" />
-      </svg>
-    </button>
-  </section>
-</main>
-
-<script>
-  // Marcus Aurelius, Meditations, in George Long's public-domain translation
-  // (Project Gutenberg #15877), with "thou/thy" modernised to "you/your". Cited as book.section.
-  // Plain ASCII only, so every character can be typed on a standard keyboard.
-  const MANTRAS = [
-    "Confine yourself to the present.",                                    // 7.29
-    "Wipe out the imagination. Stop the pulling of the strings.",          // 7.29
-    "Attend to the matter which is before you.",                           // 8.22
-    "Direct your attention to what is said.",                              // 7.30
-    "Take pleasure in one thing and rest in it.",                          // 6.7
-    "Occupy yourself with few things.",                                    // 4.24
-    "Do not be whirled about.",                                            // 4.22
-    "Let nothing else distract you.",                                      // 8.1
-    "Throw away your books; no longer distract yourself.",                 // 2.2
-    "Retire into yourself.",                                               // 7.28
-    "Look within. Within is the fountain of good.",                        // 7.59
-    "The soul is dyed by the thoughts.",                                   // 5.16
-    "Do every act of your life as if it were the last.",                   // 2.5
-    "Let not future things disturb you.",                                  // 7.8
-    "Do not disturb yourself by thinking of the whole of your life.",      // 8.36
-    "Every man lives the present time only, and loses only this.",         // 12.26
-    "Do not waste the remainder of your life in thoughts about others.",   // 3.4
-  ];
-  const REST_SECONDS = window.MANTRA_RELEASE ? 20 * 60 : 60; // short in dev builds (see src/main.rs)
-  const FF_MS = 700; // how long the skip button takes to spin the clock down
-  const DIM = 0.45; // opacity of the black screen overlay while the mantra waits
-  const DIM_LEAD_SECONDS = 300; // darken again over this last stretch of the break
-
-  const $ = (id) => document.getElementById(id);
-  const text = $("mantra"), rule = $("rule"), arc = $("arc"), clock = $("clock");
-
-  const C = 2 * Math.PI * arc.r.baseVal.value;
-  arc.style.strokeDasharray = C;
-
-  // Darken every screen (see src/dim.rs). Keys are [seconds from now, opacity],
-  // faded linearly from the current opacity. A no-op outside Tauri.
-  const dim = (...keys) => window.__TAURI__?.core.invoke("dim", { keys });
-
-  let mantra, chars, phase, pos, spans, deadline, ff, round = 0;
-
-  function startTyping() {
-    // New mantra each round, never the same one twice in a row.
-    const others = MANTRAS.filter((m) => m !== mantra);
-    mantra = others[Math.floor(Math.random() * others.length)];
-    chars = Array.from(mantra);
-    text.setAttribute("aria-label", mantra);
-    phase = "typing";
-    pos = 0;
-    spans = chars.map((c) => {
-      const s = document.createElement("span");
-      s.className = "ch";
-      s.textContent = c;
-      s.setAttribute("aria-hidden", "true");
-      return s;
-    });
-    text.replaceChildren(...spans);
-    spans[0].classList.add("current");
-    rule.style.setProperty("--p", 0);
-    $("round").textContent = `Round ${String(++round).padStart(2, "0")}`;
-    document.body.dataset.view = "typing";
-    dim([0.6, DIM]);
-  }
-
-  // Re-trigger a CSS animation even if the class is already present.
-  function replay(el, cls) {
-    el.classList.remove(cls);
-    void el.offsetWidth;
-    el.classList.add(cls);
-  }
-
-  addEventListener("keydown", (e) => {
-    if (phase !== "typing" || e.ctrlKey || e.metaKey) return;
-    if (e.key === "Backspace") {
-      e.preventDefault();
-      if (pos === 0) return;
-      spans[pos].classList.remove("current", "miss");
-      spans[--pos].classList.remove("inked");
-      spans[pos].classList.add("current");
-      rule.style.setProperty("--p", pos / chars.length);
-      return;
-    }
-    if (e.repeat || e.key.length !== 1) return;
-    e.preventDefault();
-    const s = spans[pos];
-    if (e.key.toLowerCase() !== chars[pos].toLowerCase()) {
-      replay(s, "miss");
-      replay(text, "shake");
-      return;
-    }
-    s.classList.remove("current", "miss");
-    s.classList.add("inked");
-    rule.style.setProperty("--p", ++pos / chars.length);
-    if (pos < chars.length) spans[pos].classList.add("current");
-    else {
-      phase = "done";
-      setTimeout(startRest, 900);
-    }
-  });
-
-  function startRest() {
-    phase = "resting";
-    $("echo").textContent = `“${mantra}”`;
-    deadline = Date.now() + REST_SECONDS * 1000;
-    ff = null;
-    document.body.dataset.view = "resting";
-    // Clear, then darken back in over the end of the break.
-    dim([1.2, 0], [Math.max(1.2, REST_SECONDS - DIM_LEAD_SECONDS), 0], [REST_SECONDS, DIM]);
-    tick();
-  }
-
-  // Driven by a wall-clock deadline, so it stays correct if frames are paused while hidden.
-  function tick() {
-    let left = Math.max(0, deadline - Date.now());
-    if (ff) {
-      // Fast-forwarding: race the remaining time down to zero, accelerating as it goes.
-      const t = Math.min(1, (Date.now() - ff.at) / FF_MS);
-      left = Math.min(left, ff.from * (1 - t * t));
-    }
-    arc.style.strokeDashoffset = (C * left) / (REST_SECONDS * 1000);
-    const s = Math.ceil(left / 1000);
-    clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    if (left > 0) requestAnimationFrame(tick);
-    else setTimeout(startTyping, 900);
-  }
-
-  $("skip").addEventListener("click", (e) => {
-    e.currentTarget.blur(); // so a later Space can't press it again
-    if (phase !== "resting" || ff) return;
-    replay(e.currentTarget, "zoom");
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) deadline = Date.now();
-    else ff = { from: Math.max(0, deadline - Date.now()), at: Date.now() };
-    dim([FF_MS / 1000, DIM]);
-  });
-
-  startTyping();
-</script>
+<mantra-app></mantra-app>
+<script type="module" src="app.js"></script>
 </body>
 </html>
