@@ -108,8 +108,11 @@ def session(headless=True):
         _wait(lambda: _port_open(PORT) and _port_open(NATIVE_PORT), "tauri-driver")
         caps = {"browserName": "wry", "tauri:options": {"application": str(APP)}}
         sid = _req("POST", "/session", {"capabilities": {"alwaysMatch": caps}})["sessionId"]
+        app = App(sid)
         try:
-            yield App(sid)
+            # The session opens before the page's modules have run; wait for the first mantra.
+            _wait(lambda: app.js("return !!document.querySelector('mantra-app')?.mantra"), "the page")
+            yield app
         finally:
             _req("DELETE", f"/session/{sid}")
     finally:
