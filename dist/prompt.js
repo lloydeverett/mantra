@@ -23,7 +23,6 @@ class CommitmentPrompt extends LitElement {
     super.connectedCallback();
     // Clicks elsewhere (the presets included) mustn't take focus, or the caret, from the entry.
     window.addEventListener("mousedown", (e) => this.open && !this.entry.contains(e.target) && e.preventDefault());
-    window.addEventListener("resize", () => this.open && this.fitPlaceholder());
   }
 
   async start(placeholder) {
@@ -35,7 +34,6 @@ class CommitmentPrompt extends LitElement {
     this.timeout = setTimeout(() => emit(this, "cancelled"), this.seconds * 1000);
     await this.updateComplete;
     this.entry.replaceChildren();
-    this.fitPlaceholder();
     this.entry.focus();
     replay(this.querySelector(".rule"), "drain");
   }
@@ -48,23 +46,6 @@ class CommitmentPrompt extends LitElement {
 
   get entry() {
     return this.querySelector(".entry");
-  }
-
-  // A placeholder that wraps leaves the entry as wide as it may grow, not as wide as its
-  // balanced lines, so left-aligned it sits off centre. Measure its widest line on a hidden
-  // copy of the empty entry; the CSS applies the width only while the entry is empty.
-  fitPlaceholder() {
-    const entry = this.entry;
-    if (entry.textContent) return; // the empty entry's width is the one to start from
-    entry.style.removeProperty("--placeholder-width");
-    const probe = Object.assign(document.createElement("p"), { className: "entry", textContent: this.placeholder });
-    probe.style.cssText = `position: absolute; visibility: hidden; width: ${entry.offsetWidth}px`;
-    this.append(probe);
-    const range = document.createRange();
-    range.selectNodeContents(probe);
-    const width = Math.max(...[...range.getClientRects()].map((r) => r.width));
-    probe.remove();
-    entry.style.setProperty("--placeholder-width", `${Math.ceil(width)}px`);
   }
 
   get started() {
@@ -97,10 +78,7 @@ class CommitmentPrompt extends LitElement {
     for (let el; (el = [...entry.children].find((c) => !(c.tagName === "BR" && c === entry.lastChild))); )
       el.replaceWith(" ", ...el.childNodes);
     // An emptied contenteditable can keep a stray <br>, which would hide the placeholder.
-    if (!entry.textContent) {
-      entry.replaceChildren();
-      this.fitPlaceholder(); // the window may have resized since
-    }
+    if (!entry.textContent) entry.replaceChildren();
     this.text = entry.textContent;
   }
 
@@ -109,9 +87,10 @@ class CommitmentPrompt extends LitElement {
     const auto = parseCommitment(this.text).duration ?? this.defaultDuration;
     return html`
       <span class="kicker">Commit to what's next</span>
-      <p class="entry" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Commitment"
-        aria-multiline="false" aria-placeholder=${this.placeholder} data-placeholder=${this.placeholder}
-        @beforeinput=${this.beforeInput} @input=${this.input}></p>
+      <p class="field"><span class="entry" contenteditable="plaintext-only" spellcheck="false" role="textbox"
+        aria-label="Commitment" aria-multiline="false" aria-placeholder=${this.placeholder}
+        @beforeinput=${this.beforeInput} @input=${this.input}></span><span class="placeholder" aria-hidden="true"
+        ?hidden=${this.text} @mousedown=${() => this.entry.focus()}>${this.placeholder}</span></p>
       <div class="rule" style="--t: ${this.seconds}s" title="Time left to commit"></div>
       <div class="presets" role="radiogroup" aria-label="Duration">
         ${PRESETS.map((m, i) => html`

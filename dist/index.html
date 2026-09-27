@@ -149,26 +149,32 @@
   }
 
   /* Commitment prompt */
-  .entry {
-    min-height: 1.3em;
+  /* The entry and its placeholder are inline in one centred line, like the mantra, so the
+     empty entry (and the caret) sits at the start of the placeholder however it wraps. */
+  .field {
     max-width: 24ch;
     margin: 1.25rem 0 0;
     font-family: var(--font-serif);
     font-size: clamp(1.6rem, 4.4vw, 2.5rem);
     font-weight: 600;
     line-height: 1.3;
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
     text-wrap: balance;
+    cursor: text;
+  }
+  .entry {
+    display: inline-block;
+    vertical-align: top;
+    min-width: 1px;
+    max-width: 100%;
+    min-height: 1.3em;
+    white-space: pre-wrap;
     caret-color: var(--foreground);
     outline: none;
-    cursor: text;
     -webkit-user-select: text;
     user-select: text;
   }
-  .entry:empty::before { content: attr(data-placeholder); color: var(--ghost); }
-  /* The entry is only as wide as its placeholder, so this puts the caret at its start. */
-  .entry:empty { width: var(--placeholder-width, auto); text-align: left; }
+  .placeholder { color: var(--ghost); }
   ::highlight(duration) { color: var(--accent); }
   .rule.drain::after {
     --p: 1; /* stays full when motion is reduced */
