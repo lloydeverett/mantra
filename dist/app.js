@@ -94,10 +94,11 @@ class MantraApp extends LitElement {
   typed() {
     this.active = null;
     dim([PAUSE_MS / 1000, 0]);
-    setTimeout(() => {
+    setTimeout(async () => {
+      this.view = "prompt";
+      await this.updateComplete; // the entry can't take focus while its view is hidden
       this.prompt.start(this.lastCommitment ?? SAMPLE);
       this.active = this.prompt;
-      this.view = "prompt";
     }, PAUSE_MS);
   }
 

@@ -30,3 +30,6 @@ export function formatDuration(minutes) {
   const h = Math.floor(minutes / 60), m = minutes % 60;
   return [h && `${h}h`, m && `${m}m`].filter(Boolean).join(" ");
 }
+
+// A commitment is one line: pasted or dropped line breaks become a single space.
+export const singleLine = (text) => text.replace(/[^\S\r\n]*[\r\n]+\s*/g, " ");

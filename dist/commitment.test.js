@@ -1,7 +1,7 @@
 // Run with: just test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCommitment, formatDuration } from "./commitment.js";
+import { parseCommitment, formatDuration, singleLine } from "./commitment.js";
 
 const parse = (s) => {
   const { commitment, duration } = parseCommitment(s);
@@ -75,4 +75,11 @@ test("formatDuration", () => {
   assert.equal(formatDuration(60), "1h");
   assert.equal(formatDuration(90), "1h 30m");
   assert.equal(formatDuration(240), "4h");
+});
+
+test("singleLine turns line breaks into single spaces", () => {
+  assert.equal(singleLine("Wash the dishes"), "Wash the dishes");
+  assert.equal(singleLine("Wash\nthe dishes"), "Wash the dishes");
+  assert.equal(singleLine("Wash \r\n\r\n  the dishes\n"), "Wash the dishes ");
+  assert.equal(singleLine("Wash  the dishes"), "Wash  the dishes"); // other spacing is left alone
 });

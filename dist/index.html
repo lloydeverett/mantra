@@ -116,8 +116,7 @@
   }
   .ch { position: relative; transition: color .35s ease; }
   .ch.inked { color: var(--foreground); }
-  .ch.current::before,
-  .caret::before {
+  .ch.current::before {
     content: "";
     position: absolute;
     left: -1px;
@@ -166,10 +165,16 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     text-wrap: balance;
+    caret-color: var(--foreground);
+    outline: none;
+    cursor: text;
+    -webkit-user-select: text;
+    user-select: text;
   }
-  .entry .duration { color: var(--accent); }
-  .entry .placeholder { color: var(--ghost); }
-  .caret { position: relative; }
+  .entry:empty::before { content: attr(data-placeholder); color: var(--ghost); }
+  /* The entry is only as wide as its placeholder, so this puts the caret at its start. */
+  .entry:empty { text-align: left; }
+  ::highlight(duration) { color: var(--accent); }
   .rule.drain::after {
     --p: 1; /* stays full when motion is reduced */
     animation: drain var(--t) linear forwards;
