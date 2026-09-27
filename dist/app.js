@@ -73,7 +73,7 @@ class MantraApp extends LitElement {
     render() {
         return html`
       <main>
-        <mantra-typing class="view" @typed=${this.typed}></mantra-typing>
+        <mantra-typing class="view" @typed=${this.typed} @redraw=${this.newRound}></mantra-typing>
         <commitment-prompt class="view" .defaultDuration=${DEFAULT_DURATION} .seconds=${PROMPT_SECONDS}
           @committed=${this.committed} @cancelled=${this.typeMantra}></commitment-prompt>
         <session-timer class="view" @ending=${(e) => dim([e.detail / 1000, DIM])}

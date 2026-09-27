@@ -148,6 +148,9 @@
     transition: transform .3s ease;
   }
 
+  .redraw.spin svg { animation: spin .5s ease-in-out; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* Commitment prompt */
   /* The entry and its placeholder are inline in one centred line, like the mantra, so the
      empty entry (and the caret) sits at the start of the placeholder however it wraps. */
@@ -240,7 +243,7 @@
     text-wrap: balance;
     color: color-mix(in srgb, var(--foreground) 78%, transparent);
   }
-  .end-session {
+  .end-session, .redraw {
     display: grid;
     place-items: center;
     width: 2.5rem;
@@ -254,8 +257,9 @@
     cursor: pointer;
     transition: color .2s ease, border-color .2s ease;
   }
-  .end-session:hover, .end-session:focus-visible { color: var(--foreground); border-color: var(--foreground); outline: none; }
-  .end-session svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .end-session:hover, .end-session:focus-visible, .redraw:hover { color: var(--foreground); border-color: var(--foreground); outline: none; }
+  .end-session svg, .redraw svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .redraw svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .end-session.zoom svg { animation: zoom .7s ease-in-out; }
   /* The chevrons whoosh out to the right and slide back in from the left. */
   @keyframes zoom {
