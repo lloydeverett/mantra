@@ -5,7 +5,9 @@ mod dim;
 use tauri::{window::Color, Manager, Theme, WebviewWindow, WindowEvent};
 
 // Match --background in dist/index.html so the strip exposed while the
-// webview catches up with a resize is the same colour as the page.
+// webview catches up with a resize is the same colour as the page. On macOS
+// the webview paints its own default background over the window's unless
+// the macos-private-api feature lets this turn that off.
 fn paint(window: &WebviewWindow, theme: Theme) {
     let color = match theme {
         Theme::Dark => Color(0x14, 0x14, 0x13, 0xff),

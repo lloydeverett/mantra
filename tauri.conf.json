@@ -6,6 +6,7 @@
   "build": { "frontendDist": "dist" },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [{ "title": "Mantra", "width": 900, "height": 640, "minWidth": 420, "minHeight": 480 }]
   },
   "bundle": {
