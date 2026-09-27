@@ -8,7 +8,7 @@ A desktop ritual: type a short mantra, commit to what you'll do next, then do it
 A short line from Marcus Aurelius that must be typed exactly (case ignored) to proceed.
 
 **Round**:
-One pass through the ritual: a mantra, a commitment, and a session. Numbered from 01.
+One pass through the ritual: a mantra, a commitment, and a session.
 
 **Commitment**:
 What the user promises to do for the session, stated in their own words (e.g. "Wash the dishes").

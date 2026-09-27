@@ -67,22 +67,17 @@ addEventListener("contextmenu", (e) => e.target.closest?.("[contenteditable]") |
 // Runs the round: typing -> prompt -> session -> typing (a new round).
 // A cancelled prompt returns to the same mantra in the same round.
 class MantraApp extends LitElement {
-  static properties = { view: { reflect: true, attribute: "data-view" }, round: { state: true } };
+  static properties = { view: { reflect: true, attribute: "data-view" } };
 
   createRenderRoot() { return this; }
 
   constructor() {
     super();
-    this.round = 0;
     this.active = null; // the view taking keys, if any
   }
 
   render() {
     return html`
-      <header>
-        <span class="kicker">Mantra</span>
-        <span class="kicker">Round ${String(this.round).padStart(2, "0")}</span>
-      </header>
       <main>
         <mantra-typing class="view" @typed=${this.typed}></mantra-typing>
         <commitment-prompt class="view" .defaultDuration=${DEFAULT_DURATION} .seconds=${PROMPT_SECONDS}
@@ -103,7 +98,6 @@ class MantraApp extends LitElement {
 
   newRound() {
     this.mantra = pick(MANTRAS, this.mantra);
-    this.round++;
     this.typeMantra();
   }
 
