@@ -5,7 +5,6 @@
 //! its frames while it's in the background, which is exactly when the break
 //! is running.
 
-use std::cell::RefCell;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -13,11 +12,6 @@ use specialfx::{Color, Overlay, OverlayOptions};
 use tauri::{AppHandle, Manager, State};
 
 const FRAME: Duration = Duration::from_millis(16);
-
-thread_local! {
-    // macOS only lets the overlay be touched on the main thread, so it lives there.
-    static OVERLAY: RefCell<Option<Overlay>> = const { RefCell::new(None) };
-}
 
 /// Piecewise-linear opacity: from `from` at `start` through each
 /// `(seconds after start, opacity)` key in turn, then holding the last.
@@ -52,20 +46,20 @@ pub struct Dimmer {
 }
 
 /// Creates the (transparent) overlay and the thread that animates it.
-/// Call from `setup`, which runs on the main thread.
+/// Call from `setup`: specialfx needs the overlay created on the main thread.
 pub fn init(app: &AppHandle) {
-    match Overlay::new(OverlayOptions { color: Color::TRANSPARENT, ..Default::default() }) {
-        Ok(overlay) => OVERLAY.with(|o| *o.borrow_mut() = Some(overlay)),
-        // No backend on Linux yet; `dim` then does nothing.
-        Err(e) => eprintln!("screen dimming unavailable: {e}"),
-    }
     let dimmer = Arc::new(Dimmer {
         fade: Mutex::new(Fade { from: 0.0, start: Instant::now(), keys: Vec::new() }),
         changed: Condvar::new(),
     });
     app.manage(dimmer.clone());
-    let app = app.clone();
-    std::thread::spawn(move || animate(app, dimmer));
+    match Overlay::new(OverlayOptions { color: Color::TRANSPARENT, ..Default::default() }) {
+        Ok(overlay) => {
+            std::thread::spawn(move || animate(overlay, dimmer));
+        }
+        // No backend on Linux yet; `dim` then does nothing.
+        Err(e) => eprintln!("screen dimming unavailable: {e}"),
+    }
 }
 
 /// Replaces the schedule, starting from the current opacity.
@@ -78,7 +72,7 @@ pub fn dim(keys: Vec<(f32, f32)>, dimmer: State<Arc<Dimmer>>) {
     dimmer.changed.notify_one();
 }
 
-fn animate(app: AppHandle, dimmer: Arc<Dimmer>) {
+fn animate(mut overlay: Overlay, dimmer: Arc<Dimmer>) {
     let mut sent = None;
     let mut fade = dimmer.fade.lock().unwrap();
     loop {
@@ -87,13 +81,7 @@ fn animate(app: AppHandle, dimmer: Arc<Dimmer>) {
         let a = (fade.alpha_at(now).clamp(0.0, 1.0) * 255.0).round() as u8;
         if sent != Some(a) {
             sent = Some(a);
-            let _ = app.run_on_main_thread(move || {
-                OVERLAY.with(|o| {
-                    if let Some(overlay) = o.borrow_mut().as_mut() {
-                        let _ = overlay.set_color(Color::from_rgba8(0, 0, 0, a));
-                    }
-                })
-            });
+            let _ = overlay.set_color(Color::from_rgba8(0, 0, 0, a));
         }
         fade = if fade.done_at(now) {
             dimmer.changed.wait(fade).unwrap()
