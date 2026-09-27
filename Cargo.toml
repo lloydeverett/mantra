@@ -11,5 +11,5 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-specialfx = { git = "https://github.com/lloydeverett/specialfx", default-features = false }
+specialfx = { git = "https://github.com/lloydeverett/specialfx", rev = "fef9e5cd580ac0bb9472d75a4db0efc669aca39d", default-features = false }
 tauri = { version = "2", features = [] }

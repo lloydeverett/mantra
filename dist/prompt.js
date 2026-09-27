@@ -9,7 +9,7 @@ const PRESETS = [AUTO, 5, 10, 20, 30, 45, 60, 120];
 
 // State a commitment and pick a duration before the rule drains. Set
 // defaultDuration and seconds (the time limit) before start().
-// Fires "committed" ({ text, commitment, duration }) or "cancelled" (Escape or timeout).
+// Fires "committed" ({ commitment, duration }) or "cancelled" (Escape or timeout).
 //
 // The entry is a contenteditable="plaintext-only" element, so the browser does
 // the editing. Lit never renders inside it; the typed duration is coloured with
@@ -120,7 +120,7 @@ class CommitmentPrompt extends LitElement {
       const { commitment, duration } = this.chosen();
       if (!commitment) return;
       this.stop();
-      emit(this, "committed", { text: this.text, commitment, duration });
+      emit(this, "committed", { commitment, duration });
     } else if (e.key === "Tab") step(e.shiftKey ? -1 : 1);
     else if (e.key === "ArrowDown") step(1);
     else if (e.key === "ArrowUp") step(-1);
