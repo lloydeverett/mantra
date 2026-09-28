@@ -1,6 +1,6 @@
 # Mantra
 
-**NB: Please ignore markdown files at the root like `FEATURES.md` unless you are specifically asked to look at them.**
+**NB: Please ignore markdown files at the root like `TODO.md` unless you are specifically asked to look at them.**
 
 Tauri v2 app. The UI is in `dist/`: styles in `index.html`, light-DOM [Lit](https://lit.dev) components in ES modules (`app.js` runs the round; `typing.js`, `prompt.js`, `session.js` are the views), and the pure duration parser in `commitment.js`. No npm and no build step: Lit is vendored in `dist/vendor/`. Rust in `src/main.rs` only opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it).
 
