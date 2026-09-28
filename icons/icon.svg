@@ -6,12 +6,16 @@
       <stop offset="1" stop-color="#141413"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="228" fill="url(#tile)"/>
-  <!-- Rest ring: faint track, three-quarter arc from twelve o'clock -->
-  <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-opacity="0.16" stroke-width="44"/>
-  <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-width="72"
-          stroke-linecap="round" stroke-dasharray="1413.7 1884.96"
-          transform="rotate(-90 512 512)"/>
-  <!-- Focal point -->
-  <circle cx="512" cy="512" r="76" fill="#ebebe9"/>
+  <!-- Apple's macOS icon grid: an 824px tile centred on the 1024px canvas, so
+       the Dock shows it at the same size as other apps' icons -->
+  <g transform="translate(100 100) scale(0.8046875)">
+    <rect width="1024" height="1024" rx="230" fill="url(#tile)"/>
+    <!-- Rest ring: faint track, three-quarter arc from twelve o'clock -->
+    <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-opacity="0.16" stroke-width="44"/>
+    <circle cx="512" cy="512" r="300" fill="none" stroke="#ebebe9" stroke-width="72"
+            stroke-linecap="round" stroke-dasharray="1413.7 1884.96"
+            transform="rotate(-90 512 512)"/>
+    <!-- Focal point -->
+    <circle cx="512" cy="512" r="76" fill="#ebebe9"/>
+  </g>
 </svg>
