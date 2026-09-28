@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod dim;
+mod pin;
 
 use tauri::{webview::PageLoadEvent, window::Color, Manager, Theme, WebviewWindow, WindowEvent};
 
@@ -27,6 +28,7 @@ fn main() {
             dim::init(app.handle());
             let window = app.get_webview_window("main").unwrap();
             paint(&window, window.theme().unwrap_or(Theme::Light));
+            pin::init(&window)?;
             let w = window.clone();
             window.on_window_event(move |event| {
                 if let WindowEvent::ThemeChanged(theme) = event {

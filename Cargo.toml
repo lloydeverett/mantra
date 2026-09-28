@@ -13,3 +13,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 specialfx = { git = "https://github.com/lloydeverett/specialfx", rev = "0e2f0801c0f1236fc8537c7a05df1d26fee6158a", default-features = false }
 tauri = { version = "2", features = ["macos-private-api"] }
+
+# Win32 for the "Always on top" system menu item. The version Tauri already uses.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
