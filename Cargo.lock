@@ -2911,8 +2911,9 @@ dependencies = [
 [[package]]
 name = "specialfx"
 version = "0.1.0"
-source = "git+https://github.com/lloydeverett/specialfx?rev=15d649da87766db55a4835645ffa2d5831cabd6c#15d649da87766db55a4835645ffa2d5831cabd6c"
+source = "git+https://github.com/lloydeverett/specialfx?rev=0e2f0801c0f1236fc8537c7a05df1d26fee6158a#0e2f0801c0f1236fc8537c7a05df1d26fee6158a"
 dependencies = [
+ "block2",
  "dispatch2",
  "objc2",
  "objc2-app-kit",

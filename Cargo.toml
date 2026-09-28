@@ -11,5 +11,5 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-specialfx = { git = "https://github.com/lloydeverett/specialfx", rev = "15d649da87766db55a4835645ffa2d5831cabd6c", default-features = false }
+specialfx = { git = "https://github.com/lloydeverett/specialfx", rev = "0e2f0801c0f1236fc8537c7a05df1d26fee6158a", default-features = false }
 tauri = { version = "2", features = ["macos-private-api"] }
