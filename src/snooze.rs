@@ -168,7 +168,7 @@ mod platform {
     use tauri::menu::{MenuItemKind, WINDOW_SUBMENU_ID};
     use tauri::AppHandle;
 
-    use super::{id, label, CANCEL, CANCEL_ID, MINUTES, SUBMENU_ID};
+    use super::{id, label, CANCEL, CANCEL_ID, MINUTES, SUBMENU_ID, TITLE};
 
     thread_local! {
         // The dock menu and its Cancel item. muda's menus live on the main thread.
@@ -190,12 +190,14 @@ mod platform {
     // handed to AppKit by the app delegate's applicationDockMenu:, which tao's
     // delegate doesn't have, so it gets one added.
     fn dock() -> tauri::Result<()> {
-        let menu = muda::Menu::new();
+        let submenu = muda::Submenu::with_id(SUBMENU_ID, TITLE, true);
         for &minutes in MINUTES {
-            menu.append(&muda::MenuItem::with_id(id(minutes), label(minutes), true, None))?;
+            submenu.append(&muda::MenuItem::with_id(id(minutes), label(minutes), true, None))?;
         }
         let cancel = muda::MenuItem::with_id(CANCEL_ID, CANCEL, false, None);
-        menu.append_items(&[&muda::PredefinedMenuItem::separator(), &cancel])?;
+        submenu.append_items(&[&muda::PredefinedMenuItem::separator(), &cancel])?;
+        let menu = muda::Menu::new();
+        menu.append(&submenu)?;
         DOCK.with_borrow_mut(|dock| *dock = Some((menu, cancel)));
         unsafe {
             let app: *mut AnyObject = msg_send![class!(NSApplication), sharedApplication];
