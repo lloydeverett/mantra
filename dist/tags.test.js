@@ -57,15 +57,15 @@ test("tags and a duration together", () => {
 const toggle = (s, tag, caret) => toggleTag(s, tag, caret).reduce((t, [start, end, insert]) => t.slice(0, start) + insert + t.slice(end), s);
 
 test("toggling on appends the tag, spaced from the text", () => {
-  assert.equal(toggle("Email Bob", "work"), "Email Bob @work");
-  assert.equal(toggle("Email Bob @personal", "work"), "Email Bob @personal @work");
+  assert.equal(toggle("Email Bob", "work", 0), "Email Bob @work");
+  assert.equal(toggle("Email Bob @personal", "work", 0), "Email Bob @personal @work");
   assert.equal(toggle("Email Bob ", "work", 5), "Email Bob @work");
 });
 
-test("toggling on at the caret leaves a space to type into", () => {
+test("toggling on with the caret at the end leaves a space to type into", () => {
   assert.equal(toggle("", "work", 0), " @work");
-  assert.equal(toggle("Email Bob ", "work", 10), "Email Bob  @work");
   assert.equal(toggle("Email Bob", "work", 9), "Email Bob @work");
+  assert.equal(toggle("Email Bob ", "work", 10), "Email Bob  @work");
 });
 
 test("toggling off removes every copy of the tag and its space", () => {
@@ -78,7 +78,7 @@ test("toggling off removes every copy of the tag and its space", () => {
 
 test("toggleTag's splices run from the end, so earlier offsets stay valid", () => {
   assert.deepEqual(toggleTag("a @work b @work", "work"), [[9, 15, ""], [1, 7, ""]]);
-  assert.deepEqual(toggleTag("a", "work"), [[1, 1, " @work"]]);
+  assert.deepEqual(toggleTag("a", "work", 1), [[1, 1, " @work"]]);
 });
 
 test("adjacent tags don't share a space", () => {

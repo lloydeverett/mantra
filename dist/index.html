@@ -210,21 +210,8 @@
   .preset:hover { color: var(--foreground); border-color: var(--foreground); }
   .preset[aria-checked="true"] { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
   .preset .auto { opacity: 0.6; }
-  /* Labels each row of chips. */
-  .chips-icon {
-    width: 0.95rem;
-    height: 0.95rem;
-    margin: 0 0.35rem 0 0.2rem;
-    vertical-align: middle;
-    position: relative;
-    top: -0.2rem; /* middle sits low, as the rows have no font size */
-    fill: none;
-    color: var(--muted-foreground);
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
+  /* Labels each row of chips. middle sits low, as the rows have no font size. */
+  .chips-icon { width: 0.95rem; height: 0.95rem; margin: 0 0.35rem 0 0.2rem; vertical-align: middle; position: relative; top: -0.2rem; color: var(--muted-foreground); }
   /* Tags: a second, quieter row. Pressed chips take the tag colour rather than filling. */
   .tag-chips { font-size: 0; margin-top: 0.6rem; }
   .tag-chip { border-style: dashed; }
@@ -293,7 +280,7 @@
   }
   .end-session:hover, .end-session:focus-visible, .redraw:hover { color: var(--foreground); border-color: var(--foreground); outline: none; }
   .end-session svg, .redraw svg { width: 1rem; height: 1rem; fill: currentColor; }
-  .redraw svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .redraw svg, .chips-icon { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .end-session.zoom svg { animation: zoom .7s ease-in-out; }
   /* The chevrons whoosh out to the right and slide back in from the left. */
   @keyframes zoom {

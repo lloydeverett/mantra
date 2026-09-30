@@ -65,8 +65,8 @@ class CommitmentPrompt extends LitElement {
   }
 
   // Add the tag to the end of the text, or take every copy of it out. The edits go
-  // through execCommand so they undo like typing, and the caret keeps its place:
-  // before the tag, if it was at the end.
+  // through execCommand so they undo like typing, and the caret keeps its place.
+  // A caret at the end stays there, so it lands before the appended tag.
   toggle(tag) {
     const entry = this.entry, sel = getSelection();
     let caret = this.text.length; // read before focus(), which may move it
