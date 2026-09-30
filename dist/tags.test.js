@@ -54,13 +54,18 @@ test("tags and a duration together", () => {
 });
 
 // Apply toggleTag's splices, as the prompt does to the entry.
-const toggle = (s, tag) => toggleTag(s, tag).reduce((t, [start, end, insert]) => t.slice(0, start) + insert + t.slice(end), s);
+const toggle = (s, tag, caret) => toggleTag(s, tag, caret).reduce((t, [start, end, insert]) => t.slice(0, start) + insert + t.slice(end), s);
 
 test("toggling on appends the tag, spaced from the text", () => {
-  assert.equal(toggle("", "work"), "@work");
   assert.equal(toggle("Email Bob", "work"), "Email Bob @work");
-  assert.equal(toggle("Email Bob ", "work"), "Email Bob @work");
   assert.equal(toggle("Email Bob @personal", "work"), "Email Bob @personal @work");
+  assert.equal(toggle("Email Bob ", "work", 5), "Email Bob @work");
+});
+
+test("toggling on at the caret leaves a space to type into", () => {
+  assert.equal(toggle("", "work", 0), " @work");
+  assert.equal(toggle("Email Bob ", "work", 10), "Email Bob  @work");
+  assert.equal(toggle("Email Bob", "work", 9), "Email Bob @work");
 });
 
 test("toggling off removes every copy of the tag and its space", () => {

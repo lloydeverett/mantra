@@ -31,11 +31,13 @@ export function parseTags(text) {
 }
 
 // The splices, as [start, end, insert] to apply in order, that toggle tag in text:
-// remove every copy of it if there is one, else append it.
-export function toggleTag(text, tag) {
+// remove every copy of it if there is one, else append it. caret is where typing
+// goes next: a tag appended there gets a space before it, so the typing doesn't
+// run into it, even if the text is empty or already ends in a space.
+export function toggleTag(text, tag, caret = text.length) {
   const matches = parseTags(text).matches.filter((m) => m.tag === tag);
   if (matches.length) return cuts(matches);
-  const gap = text === "" || /\s$/.test(text) ? "" : " ";
+  const gap = /\s$/.test(text) && caret < text.length ? "" : " ";
   return [[text.length, text.length, `${gap}@${tag}`]];
 }
 

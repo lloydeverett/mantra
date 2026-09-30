@@ -65,7 +65,8 @@ class CommitmentPrompt extends LitElement {
   }
 
   // Add the tag to the end of the text, or take every copy of it out. The edits go
-  // through execCommand so they undo like typing, and the caret keeps its place.
+  // through execCommand so they undo like typing, and the caret keeps its place:
+  // before the tag, if it was at the end.
   toggle(tag) {
     const entry = this.entry, sel = getSelection();
     let caret = this.text.length; // read before focus(), which may move it
@@ -76,7 +77,7 @@ class CommitmentPrompt extends LitElement {
       caret = before.toString().length;
     }
     entry.focus();
-    for (const [start, end, insert] of toggleTag(this.text, tag)) {
+    for (const [start, end, insert] of toggleTag(this.text, tag, caret)) {
       sel.removeAllRanges();
       sel.addRange(this.range(start, end));
       document.execCommand(insert ? "insertText" : "delete", false, insert);
@@ -130,12 +131,19 @@ class CommitmentPrompt extends LitElement {
         ?hidden=${this.text} @mousedown=${() => this.entry.focus()}>${this.placeholder}</span></p>
       <div class="rule" style="--t: ${this.seconds}s" title="Time left to commit"></div>
       <div class="presets" role="radiogroup" aria-label="Duration">
+        <svg class="chips-icon" viewBox="0 0 24 24" aria-hidden="true"><!-- timer from Lucide (ISC): https://lucide.dev -->
+          <path d="M10 2h4M12 14l3-3" /><circle cx="12" cy="14" r="8" />
+        </svg>
         ${PRESETS.map((m, i) => html`
           <button type="button" class="preset" role="radio" aria-checked=${i === this.preset} tabindex="-1" @click=${() => (this.preset = i)}>
             ${m === AUTO ? html`Auto <span class="auto">${formatDuration(auto)}</span>` : formatDuration(m)}
           </button>`)}
       </div>
       <div class="tag-chips" role="group" aria-label="Tags">
+        <svg class="chips-icon" viewBox="0 0 24 24" aria-hidden="true"><!-- tag from Lucide (ISC): https://lucide.dev -->
+          <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+          <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+        </svg>
         ${TAGS.map((tag) => html`
           <button type="button" class="preset tag-chip" aria-pressed=${tags.includes(tag)} tabindex="-1" @click=${() => this.toggle(tag)}>@${tag}</button>`)}
       </div>
