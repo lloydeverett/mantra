@@ -109,7 +109,10 @@ fn start(app: &AppHandle, minutes: u32) {
         if SystemTime::now() >= until {
             *current = None;
             drop(current);
-            changed(&app);
+            // On the main thread, like the menus' and the page's calls, so the
+            // page hears of each change in the order they happen.
+            let handle = app.clone();
+            let _ = app.run_on_main_thread(move || changed(&handle));
             return;
         }
     });
@@ -202,7 +205,9 @@ mod platform {
                 dock_menu as extern "C-unwind" fn(&AnyObject, Sel, *mut AnyObject) -> *mut AnyObject,
             );
             let class = delegate.class() as *const _ as *mut _;
-            objc2::ffi::class_addMethod(class, sel!(applicationDockMenu:), imp, c"@@:@".as_ptr());
+            if !objc2::ffi::class_addMethod(class, sel!(applicationDockMenu:), imp, c"@@:@".as_ptr()).as_bool() {
+                eprintln!("dock menu unavailable: the app delegate already has one");
+            }
             // NSApplication may look over its delegate's methods only when it's set.
             let _: () = msg_send![app, setDelegate: delegate];
         }

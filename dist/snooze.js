@@ -32,7 +32,7 @@ class SnoozeCountdown extends LitElement {
   render() {
     if (!this.left) return nothing;
     return html`
-      <button type="button" title="Cancel snooze" aria-label="Cancel snooze"
+      <button type="button" title="Cancel snooze" aria-label="Cancel snooze" tabindex="-1"
         @mousedown=${(e) => e.preventDefault()} @click=${() => invoke("unsnooze")}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><!-- bell-off from Lucide (ISC): https://lucide.dev -->
           <path d="M10.268 21a2 2 0 0 0 3.464 0" />
