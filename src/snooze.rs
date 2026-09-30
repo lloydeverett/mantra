@@ -1,8 +1,10 @@
-//! Snooze: holds off the screen dimming (dim.rs) for a while. The round carries
-//! on underneath, and when the snooze ends the dimming fades back in to wherever
-//! the page's schedule has got to. Started from the Snooze menu: in the app menu
-//! and the dock menu on macOS, and in the ⋮ menu (menu.rs) where that's shown.
-//! Cancelled from there, or from the countdown the page shows (dist/snooze.js).
+//! Snooze: holds off the screen dimming (dim.rs) or window hiding (policy.rs)
+//! for a while. The round carries on underneath, and when the snooze ends the
+//! dimming fades back in to wherever the page's schedule has got to, or the
+//! windows hide again if the round is still waiting. Started from the Snooze
+//! menu: in the app menu and the dock menu on macOS, and in the ⋮ menu
+//! (menu.rs) where that's shown. Cancelled from there, or from the countdown
+//! the page shows (dist/snooze.js).
 //!
 //! Every launch starts unsnoozed.
 
@@ -94,7 +96,7 @@ fn start(app: &AppHandle, minutes: u32) {
     let until = SystemTime::now() + Duration::from_secs(minutes as u64 * 60);
     *app.state::<Snooze>().until.lock().unwrap() = Some(until);
     let secs = minutes as f32 * 60.0;
-    app.state::<Arc<Dimmer>>().mask(vec![(FADE, 0.0), (secs, 0.0), (secs + FADE, 1.0)]);
+    app.state::<Arc<Dimmer>>().snooze(vec![(FADE, 0.0), (secs, 0.0), (secs + FADE, 1.0)]);
     publish(app);
     // The mask fades back in by itself; this tells the menus once it runs out.
     // Polled against the wall clock, as sleep()'s clock stops while a Mac sleeps.
@@ -120,7 +122,7 @@ fn start(app: &AppHandle, minutes: u32) {
 
 fn cancel(app: &AppHandle) {
     if app.state::<Snooze>().until.lock().unwrap().take().is_some() {
-        app.state::<Arc<Dimmer>>().mask(vec![(FADE, 1.0)]);
+        app.state::<Arc<Dimmer>>().snooze(vec![(FADE, 1.0)]);
         publish(app);
     }
 }
@@ -131,10 +133,11 @@ fn until_ms(snooze: State<Snooze>) -> Option<u64> {
     Some(until.duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64)
 }
 
-/// Brings the menus' Cancel items and the page's countdown up to date.
+/// Brings the menus' Cancel items, window hiding and the page's countdown up to date.
 fn publish(app: &AppHandle) {
     let ms = until_ms(app.state());
     platform::cancellable(app, ms.is_some());
+    crate::policy::snoozed(app, ms.is_some());
     if let Some(window) = app.get_webview_window("main") {
         let ms = ms.map_or("null".into(), |ms| ms.to_string());
         let _ = window.eval(format!("document.querySelector('snooze-countdown')?.show({ms})"));
@@ -162,17 +165,14 @@ pub fn snoozed(snooze: State<Snooze>) -> Option<u64> {
 mod platform {
     use std::cell::RefCell;
 
-    use muda::ContextMenu;
-    use objc2::runtime::{AnyObject, Imp, Sel};
-    use objc2::{class, msg_send, sel};
     use tauri::menu::{MenuItemKind, WINDOW_SUBMENU_ID};
     use tauri::AppHandle;
 
     use super::{id, label, CANCEL, CANCEL_ID, MINUTES, SUBMENU_ID, TITLE};
 
     thread_local! {
-        // The dock menu and its Cancel item. muda's menus live on the main thread.
-        static DOCK: RefCell<Option<(muda::Menu, muda::MenuItem)>> = const { RefCell::new(None) };
+        // The dock menu's Cancel item. muda's menus live on the main thread.
+        static DOCK: RefCell<Option<muda::MenuItem>> = const { RefCell::new(None) };
     }
 
     pub fn init(app: &AppHandle) -> tauri::Result<()> {
@@ -185,10 +185,6 @@ mod platform {
         dock()
     }
 
-    // Tauri has no dock menu, so this one is built with muda, which Tauri's menus
-    // are built on (so its items' events reach on_menu_event all the same), and
-    // handed to AppKit by the app delegate's applicationDockMenu:, which tao's
-    // delegate doesn't have, so it gets one added.
     fn dock() -> tauri::Result<()> {
         let submenu = muda::Submenu::with_id(SUBMENU_ID, TITLE, true);
         for &minutes in MINUTES {
@@ -196,28 +192,8 @@ mod platform {
         }
         let cancel = muda::MenuItem::with_id(CANCEL_ID, CANCEL, false, None);
         submenu.append_items(&[&muda::PredefinedMenuItem::separator(), &cancel])?;
-        let menu = muda::Menu::new();
-        menu.append(&submenu)?;
-        DOCK.with_borrow_mut(|dock| *dock = Some((menu, cancel)));
-        unsafe {
-            let app: *mut AnyObject = msg_send![class!(NSApplication), sharedApplication];
-            let delegate: *mut AnyObject = msg_send![app, delegate];
-            let Some(delegate) = delegate.as_ref() else { return Ok(()) };
-            let imp: Imp = std::mem::transmute(
-                dock_menu as extern "C-unwind" fn(&AnyObject, Sel, *mut AnyObject) -> *mut AnyObject,
-            );
-            let class = delegate.class() as *const _ as *mut _;
-            if !objc2::ffi::class_addMethod(class, sel!(applicationDockMenu:), imp, c"@@:@".as_ptr()).as_bool() {
-                eprintln!("dock menu unavailable: the app delegate already has one");
-            }
-            // NSApplication may look over its delegate's methods only when it's set.
-            let _: () = msg_send![app, setDelegate: delegate];
-        }
-        Ok(())
-    }
-
-    extern "C-unwind" fn dock_menu(_: &AnyObject, _: Sel, _: *mut AnyObject) -> *mut AnyObject {
-        DOCK.with_borrow(|dock| dock.as_ref().map_or(std::ptr::null_mut(), |(menu, _)| menu.ns_menu().cast()))
+        DOCK.with_borrow_mut(|dock| *dock = Some(cancel));
+        crate::dock::append(&submenu)
     }
 
     pub fn cancellable(app: &AppHandle, cancellable: bool) {
@@ -228,7 +204,7 @@ mod platform {
         }
         let _ = app.run_on_main_thread(move || {
             DOCK.with_borrow(|dock| {
-                if let Some((_, cancel)) = dock {
+                if let Some(cancel) = dock {
                     cancel.set_enabled(cancellable);
                 }
             })

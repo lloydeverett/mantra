@@ -1,11 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod dim;
+#[cfg(target_os = "macos")]
+mod dock;
 mod menu;
 mod pin;
+mod policy;
 mod snooze;
 
-use tauri::{webview::PageLoadEvent, window::Color, Manager, Theme, WebviewWindow, WindowEvent};
+use tauri::{webview::PageLoadEvent, window::Color, Manager, RunEvent, Theme, WebviewWindow, WindowEvent};
 
 // Match --background in dist/index.html so the strip exposed while the
 // webview catches up with a resize is the same colour as the page. On macOS
@@ -36,6 +39,7 @@ fn main() {
             let window = app.get_webview_window("main").unwrap();
             paint(&window, window.theme().unwrap_or(Theme::Light));
             pin::init(&window)?;
+            policy::init(app.handle())?;
             snooze::init(app.handle())?;
             let w = window.clone();
             window.on_window_event(move |event| {
@@ -58,10 +62,16 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             dim::dim,
             menu::menu,
+            policy::waiting,
             snooze::snooze,
             snooze::unsnooze,
             snooze::snoozed
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_, event| {
+            if let RunEvent::Exit = event {
+                policy::exit();
+            }
+        });
 }

@@ -1,6 +1,7 @@
 //! Screen dimming: a black specialfx overlay across every monitor, whose
 //! opacity follows a schedule set from the page with the `dim` command,
-//! scaled by a mask that a snooze (snooze.rs) fades out and back in.
+//! scaled by a mask that a snooze (snooze.rs) fades out and back in, and by
+//! another that fades out when the While Waiting policy (policy.rs) isn't Dim.
 //!
 //! The fade runs here rather than in the page because the webview may throttle
 //! its frames while it's in the background, which is exactly when the break
@@ -52,19 +53,20 @@ impl Fade {
     }
 }
 
-/// The overlay's opacity: the page's schedule, times the snooze's mask.
+/// The overlay's opacity: the page's schedule, times the snooze's mask and the policy's.
 struct Screen {
     fade: Fade,
-    mask: Fade,
+    snooze: Fade,
+    policy: Fade,
 }
 
 impl Screen {
     fn alpha_at(&self, now: SystemTime) -> f32 {
-        self.fade.alpha_at(now) * self.mask.alpha_at(now)
+        self.fade.alpha_at(now) * self.snooze.alpha_at(now) * self.policy.alpha_at(now)
     }
 
     fn done_at(&self, now: SystemTime) -> bool {
-        self.fade.done_at(now) && self.mask.done_at(now)
+        self.fade.done_at(now) && self.snooze.done_at(now) && self.policy.done_at(now)
     }
 }
 
@@ -74,9 +76,15 @@ pub struct Dimmer {
 }
 
 impl Dimmer {
-    /// Replaces the mask's schedule, as `dim` does the page's.
-    pub fn mask(&self, keys: Vec<(f32, f32)>) {
-        self.screen.lock().unwrap().mask.retarget(SystemTime::now(), keys);
+    /// Replaces the snooze's mask's schedule, as `dim` does the page's.
+    pub fn snooze(&self, keys: Vec<(f32, f32)>) {
+        self.screen.lock().unwrap().snooze.retarget(SystemTime::now(), keys);
+        self.changed.notify_one();
+    }
+
+    /// Replaces the policy's mask's schedule, likewise.
+    pub fn policy(&self, keys: Vec<(f32, f32)>) {
+        self.screen.lock().unwrap().policy.retarget(SystemTime::now(), keys);
         self.changed.notify_one();
     }
 }
@@ -87,7 +95,8 @@ pub fn init(app: &AppHandle) {
     let dimmer = Arc::new(Dimmer {
         screen: Mutex::new(Screen {
             fade: Fade { from: 0.0, start: SystemTime::now(), keys: Vec::new() },
-            mask: Fade { from: 1.0, start: SystemTime::now(), keys: Vec::new() },
+            snooze: Fade { from: 1.0, start: SystemTime::now(), keys: Vec::new() },
+            policy: Fade { from: 1.0, start: SystemTime::now(), keys: Vec::new() },
         }),
         changed: Condvar::new(),
     });
@@ -141,9 +150,13 @@ mod tests {
     }
 
     #[test]
-    fn mask_scales_the_schedule() {
+    fn snooze_scales_the_schedule() {
         let t0 = SystemTime::now();
-        let screen = Screen { fade: fade(t0, 0.5, &[]), mask: fade(t0, 1.0, &[(10.0, 0.0), (20.0, 0.0), (30.0, 1.0)]) };
+        let screen = Screen {
+            fade: fade(t0, 0.5, &[]),
+            snooze: fade(t0, 1.0, &[(10.0, 0.0), (20.0, 0.0), (30.0, 1.0)]),
+            policy: fade(t0, 1.0, &[]),
+        };
         assert_eq!(screen.alpha_at(t0), 0.5);
         assert_eq!(screen.alpha_at(at(t0, 5.0)), 0.25);
         assert_eq!(screen.alpha_at(at(t0, 15.0)), 0.0);
@@ -151,10 +164,28 @@ mod tests {
     }
 
     #[test]
-    fn done_only_when_both_are() {
+    fn done_only_when_all_are() {
         let t0 = SystemTime::now();
-        let screen = Screen { fade: fade(t0, 0.0, &[(5.0, 0.5)]), mask: fade(t0, 1.0, &[(10.0, 0.0)]) };
+        let screen = Screen {
+            fade: fade(t0, 0.0, &[(5.0, 0.5)]),
+            snooze: fade(t0, 1.0, &[(10.0, 0.0)]),
+            policy: fade(t0, 1.0, &[(15.0, 0.0)]),
+        };
         assert!(!screen.done_at(at(t0, 7.0)));
-        assert!(screen.done_at(at(t0, 11.0)));
+        assert!(!screen.done_at(at(t0, 11.0)));
+        assert!(screen.done_at(at(t0, 16.0)));
+    }
+
+    #[test]
+    fn policy_scales_it_too() {
+        let t0 = SystemTime::now();
+        let screen = Screen {
+            fade: fade(t0, 0.5, &[]),
+            snooze: fade(t0, 0.5, &[]),
+            policy: fade(t0, 1.0, &[(10.0, 0.0)]),
+        };
+        assert_eq!(screen.alpha_at(t0), 0.25);
+        assert_eq!(screen.alpha_at(at(t0, 5.0)), 0.125);
+        assert_eq!(screen.alpha_at(at(t0, 10.0)), 0.0);
     }
 }

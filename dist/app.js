@@ -51,6 +51,10 @@ const MENU_GAP = 4; // px between the menu button and the menu it pops up
 // faded linearly from the current opacity. A no-op outside Tauri.
 const dim = (...keys) => window.__TAURI__?.core.invoke("dim", { keys });
 
+// Whether the round is waiting, from the mantra's appearing until a session
+// starts, for the While Waiting policy (see src/policy.rs). A no-op outside Tauri.
+const waiting = (on) => window.__TAURI__?.core.invoke("waiting", { waiting: on });
+
 // Pop up the native menu below the button (see src/menu.rs).
 const openMenu = (button) => {
     const r = button.getBoundingClientRect();
@@ -118,6 +122,7 @@ class MantraApp extends LitElement {
         this.typing.start(this.mantra);
         this.active = this.typing;
         this.view = "typing";
+        waiting(true);
         dim([0.6, DIM]);
     }
 
@@ -138,6 +143,7 @@ class MantraApp extends LitElement {
         this.active = null;
         this.session.start(commitment, duration, tags);
         this.view = "session";
+        waiting(false);
         const s = duration * 60;
         dim([Math.max(0, s - DIM_LEAD_SECONDS), 0], [s, DIM]);
     }
