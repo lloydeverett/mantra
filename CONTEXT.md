@@ -30,3 +30,6 @@ The duration choice that uses the duration typed in the commitment, or the defau
 **Tag**:
 A fixed, built-in marker a commitment can carry, written `@name` in the commitment (e.g. `@work`, `@personal`). A commitment can carry several; they are not part of its words.
 _Avoid_: Label, category, context
+
+**Snooze**:
+A stretch of time, picked from a menu, in which the screens aren't dimmed. The round carries on as normal underneath, and the window counts the snooze down until it ends or is cancelled.

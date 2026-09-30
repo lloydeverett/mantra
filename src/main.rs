@@ -3,6 +3,7 @@
 mod dim;
 mod menu;
 mod pin;
+mod snooze;
 
 use tauri::{webview::PageLoadEvent, window::Color, Manager, Theme, WebviewWindow, WindowEvent};
 
@@ -35,6 +36,7 @@ fn main() {
             let window = app.get_webview_window("main").unwrap();
             paint(&window, window.theme().unwrap_or(Theme::Light));
             pin::init(&window)?;
+            snooze::init(app.handle())?;
             let w = window.clone();
             window.on_window_event(move |event| {
                 if let WindowEvent::ThemeChanged(theme) = event {
@@ -53,7 +55,13 @@ fn main() {
                 let _ = window.set_focus();
             }
         })
-        .invoke_handler(tauri::generate_handler![dim::dim, menu::menu])
+        .invoke_handler(tauri::generate_handler![
+            dim::dim,
+            menu::menu,
+            snooze::snooze,
+            snooze::unsnooze,
+            snooze::snoozed
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

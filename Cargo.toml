@@ -17,3 +17,9 @@ tauri = { version = "2", features = ["macos-private-api"] }
 # Win32 for the "Always on top" system menu item. The version Tauri already uses.
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+
+# The dock menu's snooze items: muda builds them, as it does Tauri's menus, and
+# objc2 hands them to AppKit. The versions Tauri already uses.
+[target.'cfg(target_os = "macos")'.dependencies]
+muda = { version = "0.19", default-features = false }
+objc2 = "0.6"

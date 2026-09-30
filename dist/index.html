@@ -288,13 +288,19 @@
     41% { transform: translateX(-10px); opacity: 0; }
   }
 
-  /* The menu, top right. Faint until hovered, so it keeps out of the way. Never takes focus
-     (like the redraw button), so Enter and Space can't open it mid-mantra. */
-  .menu {
+  /* The top right corner: the snooze countdown, then the menu. */
+  .corner {
     position: fixed;
     top: 0.5rem;
     right: 0.5rem;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  /* The menu. Faint until hovered, so it keeps out of the way. Neither it nor the countdown
+     takes focus (like the redraw button), so Enter and Space can't press them mid-mantra. */
+  .menu {
     display: grid;
     place-items: center;
     width: 2rem;
@@ -310,6 +316,24 @@
   }
   .menu:hover { opacity: 1; color: var(--foreground); }
   .menu svg { width: 1.1rem; height: 1.1rem; }
+  /* The snooze countdown, a pill that cancels the snooze. */
+  snooze-countdown button {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 1.75rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: none;
+    color: var(--muted-foreground);
+    font: 600 0.8rem var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  snooze-countdown button:hover { color: var(--foreground); border-color: var(--foreground); }
+  snooze-countdown svg { width: 0.9rem; height: 0.9rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }

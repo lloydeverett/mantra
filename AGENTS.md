@@ -2,7 +2,7 @@
 
 **NB: Please ignore markdown files at the root like `TODO.md` unless you are specifically asked to look at them.**
 
-Tauri v2 app. The UI is in `dist/`: styles in `index.html`, light-DOM [Lit](https://lit.dev) components in ES modules (`app.js` runs the round; `typing.js`, `prompt.js`, `session.js` are the views), and the pure parsers: durations in `commitment.js`, tags in `tags.js`. No npm and no build step: Lit is vendored in `dist/vendor/`. Rust in `src/main.rs` opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it). `src/pin.rs` is the Always on Top toggle, and `src/menu.rs` pops up the ⋮ menu at the top right that holds it: a native context menu, hidden on macOS unless `MANTRA_SHOW_MENU=1` (`=0` hides it anywhere).
+Tauri v2 app. The UI is in `dist/`: styles in `index.html`, light-DOM [Lit](https://lit.dev) components in ES modules (`app.js` runs the round; `typing.js`, `prompt.js`, `session.js` are the views), and the pure parsers: durations in `commitment.js`, tags in `tags.js`. No npm and no build step: Lit is vendored in `dist/vendor/`. Rust in `src/main.rs` opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it). `src/snooze.rs` holds the dimming off for a while (its countdown is `dist/snooze.js`). `src/pin.rs` is the Always on Top toggle, and `src/menu.rs` pops up the ⋮ menu at the top right that holds both: a native context menu, hidden on macOS unless `MANTRA_SHOW_MENU=1` (`=0` hides it anywhere).
 
 - Run: `cargo run` (or `just run`; `just --list` for other tasks)
 - Test: `just test` runs the parser tests with `node --test`, then `cargo test`.
@@ -36,3 +36,4 @@ incus file pull mantra/home/ubuntu/mantra/target/shot.png target/
 - CSS transitions take about 0.4s. Sleep before a screenshot, or it catches them mid-fade.
 - Keys: `drive.ENTER`, `drive.TAB`, `drive.ESCAPE`, `drive.BACKSPACE`, `drive.UP`, `drive.DOWN`.
 - Skip the session with `app.js("document.querySelector('session-timer').endIn(300)")`.
+- Snooze with `app.js("window.__TAURI__.core.invoke('snooze', {minutes: 5})")`: its menus are native, out of WebDriver's reach.

@@ -1,12 +1,12 @@
 //! The ⋮ button's menu in the window's top right corner: a native context
-//! menu, popped up where the page asks. Off by default on macOS, where the app
+//! menu, popped up where the page asks: Always on Top, then Snooze. Off by default on macOS, where the app
 //! menu already has everything and the window looks cleaner without it.
 //! MANTRA_SHOW_MENU=1 or =0 forces it on or off on any platform.
 
-use tauri::menu::{CheckMenuItem, Menu};
+use tauri::menu::{CheckMenuItem, Menu, PredefinedMenuItem};
 use tauri::{LogicalPosition, WebviewWindow};
 
-use crate::pin;
+use crate::{pin, snooze};
 
 /// Whether the page shows the ⋮ button, given MANTRA_SHOW_MENU.
 pub fn shown(var: Option<&str>) -> bool {
@@ -27,7 +27,8 @@ pub fn shown(var: Option<&str>) -> bool {
 pub async fn menu(window: WebviewWindow, x: f64, y: f64) -> tauri::Result<()> {
     let pinned = window.is_always_on_top()?;
     let item = CheckMenuItem::with_id(&window, pin::ID, pin::LABEL, true, pinned, None::<&str>)?;
-    let menu = Menu::with_items(&window, &[&item])?;
+    let separator = PredefinedMenuItem::separator(&window)?;
+    let menu = Menu::with_items(&window, &[&item, &separator, &snooze::submenu(&window)?])?;
     window.popup_menu_at(&menu, LogicalPosition::new(x, y))?;
     window.set_focus()
 }
