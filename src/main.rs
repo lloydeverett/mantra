@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod dim;
+mod menu;
 mod pin;
 
 use tauri::{webview::PageLoadEvent, window::Color, Manager, Theme, WebviewWindow, WindowEvent};
@@ -18,9 +19,14 @@ fn paint(window: &WebviewWindow, theme: Theme) {
 }
 
 fn main() {
-    // Tell the page whether this is a release build, so it can pick the full break.
+    // Tell the page whether this is a release build, so it can pick the full break,
+    // and whether to show the ⋮ menu (see src/menu.rs).
+    let show_menu = menu::shown(std::env::var("MANTRA_SHOW_MENU").ok().as_deref());
     let build = tauri::plugin::Builder::<tauri::Wry>::new("build")
-        .js_init_script(format!("window.MANTRA_RELEASE = {};", !cfg!(debug_assertions)))
+        .js_init_script(format!(
+            "window.MANTRA_RELEASE = {}; window.MANTRA_MENU = {show_menu};",
+            !cfg!(debug_assertions)
+        ))
         .build();
     tauri::Builder::default()
         .plugin(build)
@@ -47,7 +53,7 @@ fn main() {
                 let _ = window.set_focus();
             }
         })
-        .invoke_handler(tauri::generate_handler![dim::dim])
+        .invoke_handler(tauri::generate_handler![dim::dim, menu::menu])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

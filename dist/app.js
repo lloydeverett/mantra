@@ -1,4 +1,4 @@
-import { LitElement, html } from "./vendor/lit-core.min.js";
+import { LitElement, html, nothing } from "./vendor/lit-core.min.js";
 import "./typing.js";
 import "./prompt.js";
 import "./session.js";
@@ -44,10 +44,17 @@ const PROMPT_SECONDS = window.MANTRA_RELEASE ? 60 : 20; // time to commit before
 const PAUSE_MS = 900; // beat between a finished view and the next
 const DIM = 0.45; // opacity of the black screen overlay while the mantra waits
 const DIM_LEAD_SECONDS = 120; // darken again over this last stretch of the session
+const MENU_GAP = 4; // px between the menu button and the menu it pops up
 
 // Darken every screen (see src/dim.rs). Keys are [seconds from now, opacity],
 // faded linearly from the current opacity. A no-op outside Tauri.
 const dim = (...keys) => window.__TAURI__?.core.invoke("dim", { keys });
+
+// Pop up the native menu below the button (see src/menu.rs).
+const openMenu = (button) => {
+    const r = button.getBoundingClientRect();
+    window.__TAURI__?.core.invoke("menu", { x: r.left, y: r.bottom + MENU_GAP });
+};
 
 // Any element of list other than last, so nothing shows twice in a row.
 const pick = (list, last) => {
@@ -72,6 +79,13 @@ class MantraApp extends LitElement {
 
     render() {
         return html`
+      ${window.MANTRA_MENU ? html`
+        <button class="menu" type="button" title="Menu" aria-label="Menu"
+          @mousedown=${(e) => e.preventDefault()} @click=${(e) => openMenu(e.currentTarget)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><!-- ellipsis-vertical from Lucide (ISC): https://lucide.dev -->
+            <circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" />
+          </svg>
+        </button>` : nothing}
       <main>
         <mantra-typing class="view" @typed=${this.typed} @redraw=${this.newRound}></mantra-typing>
         <commitment-prompt class="view" .defaultDuration=${DEFAULT_DURATION} .seconds=${PROMPT_SECONDS}

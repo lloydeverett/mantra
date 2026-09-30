@@ -26,9 +26,10 @@ icons:
     cargo tauri icon icons/icon.svg --output icons
     Remove-Item -Recurse -Force icons/android, icons/ios
 
-# Run the parser tests
+# Run the parser tests and the Rust tests
 test:
     node --test dist/commitment.test.js dist/tags.test.js
+    cargo test
 
 # Headless smoke screenshot to target/shot.png (Linux only)
 shot:
