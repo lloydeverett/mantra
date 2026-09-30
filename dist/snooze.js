@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from "./vendor/lit-core.min.js";
-import { clockText } from "./session.js";
+import { clockText } from "./commitment.js";
 
 const invoke = (cmd) => window.__TAURI__?.core.invoke(cmd);
 

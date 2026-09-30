@@ -45,6 +45,11 @@ impl Fade {
         let t = self.elapsed_at(now);
         self.keys.last().is_none_or(|&(end, _)| t >= end)
     }
+
+    /// Replaces the schedule, starting from the opacity at `now`.
+    fn retarget(&mut self, now: SystemTime, keys: Vec<(f32, f32)>) {
+        *self = Fade { from: self.alpha_at(now), start: now, keys };
+    }
 }
 
 /// The overlay's opacity: the page's schedule, times the snooze's mask.
@@ -71,9 +76,7 @@ pub struct Dimmer {
 impl Dimmer {
     /// Replaces the mask's schedule, as `dim` does the page's.
     pub fn mask(&self, keys: Vec<(f32, f32)>) {
-        let now = SystemTime::now();
-        let mut screen = self.screen.lock().unwrap();
-        screen.mask = Fade { from: screen.mask.alpha_at(now), start: now, keys };
+        self.screen.lock().unwrap().mask.retarget(SystemTime::now(), keys);
         self.changed.notify_one();
     }
 }
@@ -102,9 +105,7 @@ pub fn init(app: &AppHandle) {
 /// `keys` is `[[seconds from now, opacity], ...]`.
 #[tauri::command]
 pub fn dim(keys: Vec<(f32, f32)>, dimmer: State<Arc<Dimmer>>) {
-    let now = SystemTime::now();
-    let mut screen = dimmer.screen.lock().unwrap();
-    screen.fade = Fade { from: screen.fade.alpha_at(now), start: now, keys };
+    dimmer.screen.lock().unwrap().fade.retarget(SystemTime::now(), keys);
     dimmer.changed.notify_one();
 }
 

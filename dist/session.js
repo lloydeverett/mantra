@@ -1,15 +1,10 @@
 import { LitElement, html, nothing } from "./vendor/lit-core.min.js";
 import { replay, emit } from "./dom.js";
+import { clockText } from "./commitment.js";
 
 const FF_MS = 700; // how long End session takes to spin the clock down
 const R = 46; // ring radius, in the SVG's 100-unit viewBox
 const C = 2 * Math.PI * R;
-
-export const clockText = (ms) => {
-  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
-  const ss = String(s % 60).padStart(2, "0");
-  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
-};
 
 // Counts down the session under the commitment. Fires "ending" when the user
 // ends it early (with the fast-forward's length in ms) and "ended" at zero.

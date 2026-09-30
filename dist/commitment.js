@@ -31,5 +31,12 @@ export function formatDuration(minutes) {
   return [h && `${h}h`, m && `${m}m`].filter(Boolean).join(" ");
 }
 
+// Time left on a clock, rounded up to whole seconds: 1:05, 20:00, 1:00:00
+export const clockText = (ms) => {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
+  const ss = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+};
+
 // A commitment is one line: pasted or dropped line breaks become a single space.
 export const singleLine = (text) => text.replace(/[^\S\r\n]*[\r\n]+\s*/g, " ");

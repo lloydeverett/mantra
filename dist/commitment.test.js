@@ -1,7 +1,7 @@
 // Run with: just test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCommitment, formatDuration, singleLine } from "./commitment.js";
+import { parseCommitment, formatDuration, clockText, singleLine } from "./commitment.js";
 
 const parse = (s) => {
   const { commitment, duration } = parseCommitment(s);
@@ -75,6 +75,16 @@ test("formatDuration", () => {
   assert.equal(formatDuration(60), "1h");
   assert.equal(formatDuration(90), "1h 30m");
   assert.equal(formatDuration(240), "4h");
+});
+
+test("clockText rounds up to whole seconds", () => {
+  assert.equal(clockText(0), "0:00");
+  assert.equal(clockText(1), "0:01");
+  assert.equal(clockText(59_000), "0:59");
+  assert.equal(clockText(20 * 60_000), "20:00");
+  assert.equal(clockText(3_600_000), "1:00:00");
+  assert.equal(clockText(2 * 3_600_000 - 1), "2:00:00");
+  assert.equal(clockText(3_661_000), "1:01:01");
 });
 
 test("singleLine turns line breaks into single spaces", () => {

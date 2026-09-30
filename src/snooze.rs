@@ -79,7 +79,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
 
 /// The Snooze submenu, for the app menu and the ⋮ menu.
 pub fn submenu<R: Runtime, M: Manager<R>>(manager: &M) -> tauri::Result<Submenu<R>> {
-    let snoozed = until(manager.state()).is_some();
+    let snoozed = until_ms(manager.state()).is_some();
     let submenu = Submenu::with_id(manager, SUBMENU_ID, TITLE, true)?;
     for &minutes in MINUTES {
         submenu.append(&MenuItem::with_id(manager, id(minutes), label(minutes), true, None::<&str>)?)?;
@@ -95,7 +95,7 @@ fn start(app: &AppHandle, minutes: u32) {
     *app.state::<Snooze>().until.lock().unwrap() = Some(until);
     let secs = minutes as f32 * 60.0;
     app.state::<Arc<Dimmer>>().mask(vec![(FADE, 0.0), (secs, 0.0), (secs + FADE, 1.0)]);
-    changed(app);
+    publish(app);
     // The mask fades back in by itself; this tells the menus once it runs out.
     // Polled against the wall clock, as sleep()'s clock stops while a Mac sleeps.
     let app = app.clone();
@@ -112,7 +112,7 @@ fn start(app: &AppHandle, minutes: u32) {
             // On the main thread, like the menus' and the page's calls, so the
             // page hears of each change in the order they happen.
             let handle = app.clone();
-            let _ = app.run_on_main_thread(move || changed(&handle));
+            let _ = app.run_on_main_thread(move || publish(&handle));
             return;
         }
     });
@@ -121,23 +121,23 @@ fn start(app: &AppHandle, minutes: u32) {
 fn cancel(app: &AppHandle) {
     if app.state::<Snooze>().until.lock().unwrap().take().is_some() {
         app.state::<Arc<Dimmer>>().mask(vec![(FADE, 1.0)]);
-        changed(app);
+        publish(app);
     }
 }
 
 /// When the snooze runs out, in ms since the Unix epoch, or None if none is running.
-fn until(snooze: State<Snooze>) -> Option<u64> {
+fn until_ms(snooze: State<Snooze>) -> Option<u64> {
     let until = (*snooze.until.lock().unwrap())?;
     Some(until.duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64)
 }
 
 /// Brings the menus' Cancel items and the page's countdown up to date.
-fn changed(app: &AppHandle) {
-    let until = until(app.state());
-    platform::snoozed(app, until.is_some());
+fn publish(app: &AppHandle) {
+    let ms = until_ms(app.state());
+    platform::cancellable(app, ms.is_some());
     if let Some(window) = app.get_webview_window("main") {
-        let until = until.map_or("null".into(), |ms| ms.to_string());
-        let _ = window.eval(format!("document.querySelector('snooze-countdown')?.show({until})"));
+        let ms = ms.map_or("null".into(), |ms| ms.to_string());
+        let _ = window.eval(format!("document.querySelector('snooze-countdown')?.show({ms})"));
     }
 }
 
@@ -152,10 +152,10 @@ pub fn unsnooze(app: AppHandle) {
     cancel(&app);
 }
 
-/// When the snooze runs out, for the page when it loads: see `until`.
+/// When the snooze runs out, for the page when it loads: see `until_ms`.
 #[tauri::command]
 pub fn snoozed(snooze: State<Snooze>) -> Option<u64> {
-    until(snooze)
+    until_ms(snooze)
 }
 
 #[cfg(target_os = "macos")]
@@ -218,16 +218,16 @@ mod platform {
         DOCK.with_borrow(|dock| dock.as_ref().map_or(std::ptr::null_mut(), |(menu, _)| menu.ns_menu().cast()))
     }
 
-    pub fn snoozed(app: &AppHandle, snoozed: bool) {
+    pub fn cancellable(app: &AppHandle, cancellable: bool) {
         if let Some(MenuItemKind::Submenu(submenu)) = app.menu().and_then(|menu| menu.get(SUBMENU_ID)) {
             if let Some(MenuItemKind::MenuItem(item)) = submenu.get(CANCEL_ID) {
-                let _ = item.set_enabled(snoozed);
+                let _ = item.set_enabled(cancellable);
             }
         }
         let _ = app.run_on_main_thread(move || {
             DOCK.with_borrow(|dock| {
                 if let Some((_, cancel)) = dock {
-                    cancel.set_enabled(snoozed);
+                    cancel.set_enabled(cancellable);
                 }
             })
         });
@@ -243,7 +243,7 @@ mod platform {
         Ok(())
     }
 
-    pub fn snoozed(_app: &AppHandle, _snoozed: bool) {}
+    pub fn cancellable(_app: &AppHandle, _cancellable: bool) {}
 }
 
 #[cfg(test)]
