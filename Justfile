@@ -28,7 +28,7 @@ icons:
 
 # Run the parser tests
 test:
-    node --test dist/commitment.test.js
+    node --test dist/commitment.test.js dist/tags.test.js
 
 # Headless smoke screenshot to target/shot.png (Linux only)
 shot:

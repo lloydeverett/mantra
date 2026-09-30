@@ -15,7 +15,7 @@ What the user promises to do for the session, stated in their own words (e.g. "W
 _Avoid_: Task, intention, goal
 
 **Commitment prompt**:
-The step after the mantra where the user states a commitment and picks a duration, within a time limit.
+The step after the mantra where the user states a commitment, picks a duration and any tags, within a time limit.
 
 **Session**:
 The timed period in which the user carries out their commitment.
@@ -26,3 +26,7 @@ How long a session lasts, from 1 minute to 4 hours. Either typed into the commit
 
 **Auto**:
 The duration choice that uses the duration typed in the commitment, or the default if none was typed.
+
+**Tag**:
+A fixed, built-in marker a commitment can carry, written `@name` in the commitment (e.g. `@work`, `@personal`). A commitment can carry several; they are not part of its words.
+_Avoid_: Label, category, context

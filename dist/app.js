@@ -116,9 +116,9 @@ class MantraApp extends LitElement {
     }
 
     committed(e) {
-        const { commitment, duration } = e.detail;
+        const { commitment, duration, tags } = e.detail;
         this.active = null;
-        this.session.start(commitment, duration);
+        this.session.start(commitment, duration, tags);
         this.view = "session";
         const s = duration * 60;
         dim([Math.max(0, s - DIM_LEAD_SECONDS), 0], [s, DIM]);

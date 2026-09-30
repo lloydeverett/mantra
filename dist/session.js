@@ -14,13 +14,14 @@ const clockText = (ms) => {
 // Counts down the session under the commitment. Fires "ending" when the user
 // ends it early (with the fast-forward's length in ms) and "ended" at zero.
 class SessionTimer extends LitElement {
-  static properties = { commitment: { state: true }, left: { state: true } };
+  static properties = { commitment: { state: true }, tags: { state: true }, left: { state: true } };
 
   createRenderRoot() { return this; }
 
   // duration: minutes
-  start(commitment, duration) {
+  start(commitment, duration, tags) {
     this.commitment = commitment;
+    this.tags = tags;
     this.total = duration * 60_000;
     this.deadline = Date.now() + this.total;
     this.ff = null;
@@ -69,6 +70,7 @@ class SessionTimer extends LitElement {
         </div>
       </div>
       <p class="echo">${this.commitment}</p>
+      ${this.tags.length ? html`<p class="tags">${this.tags.map((tag) => html`<span>@${tag}</span>`)}</p>` : nothing}
       <button class="end-session" type="button" title="End session" aria-label="End session" @click=${this.end}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" />

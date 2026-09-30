@@ -2,7 +2,7 @@
 
 **NB: Please ignore markdown files at the root like `TODO.md` unless you are specifically asked to look at them.**
 
-Tauri v2 app. The UI is in `dist/`: styles in `index.html`, light-DOM [Lit](https://lit.dev) components in ES modules (`app.js` runs the round; `typing.js`, `prompt.js`, `session.js` are the views), and the pure duration parser in `commitment.js`. No npm and no build step: Lit is vendored in `dist/vendor/`. Rust in `src/main.rs` only opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it).
+Tauri v2 app. The UI is in `dist/`: styles in `index.html`, light-DOM [Lit](https://lit.dev) components in ES modules (`app.js` runs the round; `typing.js`, `prompt.js`, `session.js` are the views), and the pure parsers: durations in `commitment.js`, tags in `tags.js`. No npm and no build step: Lit is vendored in `dist/vendor/`. Rust in `src/main.rs` only opens the window; `src/dim.rs` darkens the screens with a [specialfx](https://github.com/lloydeverett/specialfx) overlay (Windows/macOS only; a no-op on Linux, so the headless driver won't show it).
 
 - Run: `cargo run` (or `just run`; `just --list` for other tasks)
 - Test: `just test` runs the parser tests with `node --test`.
@@ -21,6 +21,15 @@ with drive.session() as app:   # headless=False shows it on the current display
     app.keys(m)
     app.keys("Wash up 20m" + drive.ENTER)  # the commitment prompt appears 0.9s after the mantra
     app.shot("target/shot.png")  # then view the PNG
+```
+
+On macOS, drive inside the `mantra` incus container instead. It holds a plain copy of the repo (no git) at `/home/ubuntu/mantra`, run as `ubuntu`. Sync the working tree in, run there, pull images back:
+
+```sh
+git ls-files -co --exclude-standard | COPYFILE_DISABLE=1 tar c --no-xattrs -T - | incus exec mantra -- su - ubuntu -c 'tar x -C ~/mantra'
+incus file push check.py mantra/tmp/check.py   # an ad hoc driver script
+incus exec mantra -- su - ubuntu -c 'cd ~/mantra && python3 /tmp/check.py'
+incus file pull mantra/home/ubuntu/mantra/target/shot.png target/
 ```
 
 - `python3 scripts/drive.py`: smoke screenshot to `target/shot.png`. Driver log: `target/drive.log`.
