@@ -8,7 +8,7 @@
 //! - Hide: every other app's windows are hidden (specialfx leaves system UI
 //!   alone) until the session starts.
 //!
-//! Picked from the While Waiting menu: in the app menu and the dock menu on
+//! Picked from the Effects menu: in the app menu and the dock menu on
 //! macOS, and in the ⋮ menu (menu.rs) where that's shown. A snooze (snooze.rs)
 //! holds off either.
 //!
@@ -38,10 +38,7 @@ const FADE: f32 = 1.0;
 /// The submenu's ID. Its items' are "policy:<name>".
 const SUBMENU_ID: &str = "policy";
 
-#[cfg(target_os = "macos")]
-const TITLE: &str = "While Waiting";
-#[cfg(not(target_os = "macos"))]
-const TITLE: &str = "While waiting";
+const TITLE: &str = "Effects";
 
 impl Policy {
     fn id(self) -> &'static str {
@@ -96,7 +93,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// The While Waiting submenu, for the app menu and the ⋮ menu.
+/// The Effects submenu, for the app menu and the ⋮ menu.
 pub fn submenu<R: Runtime, M: Manager<R>>(manager: &M) -> tauri::Result<Submenu<R>> {
     let current = manager.state::<Mutex<Hiding>>().lock().unwrap().policy;
     let submenu = Submenu::with_id(manager, SUBMENU_ID, TITLE, true)?;

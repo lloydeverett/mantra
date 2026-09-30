@@ -1,7 +1,7 @@
 //! The ⋮ button's menu in the window's top right corner: a native context
-//! menu, popped up where the page asks, with Always on Top, then While
-//! Waiting and Snooze. Off by default on macOS, where the app menu already has
-//! everything and the window looks cleaner without it.
+//! menu, popped up where the page asks, with Always on Top, then Effects and
+//! Snooze. Off by default on macOS, where the app menu already has everything
+//! and the window looks cleaner without it.
 //! MANTRA_SHOW_MENU=1 or =0 forces it on or off on any platform.
 
 use tauri::menu::{CheckMenuItem, Menu, PredefinedMenuItem};
