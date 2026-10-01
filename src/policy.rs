@@ -6,7 +6,7 @@
 //!   darkens the screens until the mantra's typed, and again as each
 //!   session nears its end.
 //! - Hide: every other app's windows are hidden (specialfx leaves system UI
-//!   alone) until the session starts.
+//!   alone, and on macOS Stickies stays too) until the session starts.
 //! - Dim then Hide: as Dim, and once the round has waited 5 minutes, as Hide
 //!   too until the session starts.
 //!
@@ -46,6 +46,9 @@ const FADE: f32 = 1.0;
 const SUBMENU_ID: &str = "policy";
 
 const TITLE: &str = "Effects";
+
+/// Apps that Hide leaves alone, beyond specialfx's own exemptions.
+const EXEMPT: &[&str] = if cfg!(target_os = "macos") { &["com.apple.Stickies"] } else { &[] };
 
 impl Policy {
     fn id(self) -> &'static str {
@@ -147,7 +150,12 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Hiding)) {
     let mut hiding = state.lock().unwrap();
     change(&mut hiding);
     // Both are no-ops when there's no change to make.
-    let result = if hiding.hide_at(SystemTime::now()) { specialfx::hide_others(&HideOthersOptions::default()) } else { specialfx::show_others() };
+    let result = if hiding.hide_at(SystemTime::now()) {
+        let exempt = EXEMPT.iter().map(|&app| app.into()).collect();
+        specialfx::hide_others(&HideOthersOptions { exempt, ..Default::default() })
+    } else {
+        specialfx::show_others()
+    };
     if let Err(e) = result {
         eprintln!("window hiding unavailable: {e}");
     }
