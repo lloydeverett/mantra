@@ -69,9 +69,17 @@ fn main() {
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_, event| {
-            if let RunEvent::Exit = event {
-                policy::exit();
+        .run(|app, event| match event {
+            RunEvent::Exit => policy::exit(),
+            // Clicking the dock icon. AppKit only restores a minimized window
+            // when told the click went unhandled, and tao doesn't say that.
+            #[cfg(target_os = "macos")]
+            RunEvent::Reopen { .. } => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
             }
+            _ => {}
         });
 }
