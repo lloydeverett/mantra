@@ -47,8 +47,8 @@ mod platform {
         let menu = Menu::default(app)?;
         let item = CheckMenuItem::with_id(app, ID, LABEL, true, false, None::<&str>)?;
         if let Some(MenuItemKind::Submenu(window_menu)) = menu.get(WINDOW_SUBMENU_ID) {
-            // Minimize, Zoom, [separator, Always on Top,] separator, Close Window
-            window_menu.insert_items(&[&PredefinedMenuItem::separator(app)?, &item], 2)?;
+            // Minimize, Zoom, separator, Close Window[, separator, Always on Top]
+            window_menu.append_items(&[&PredefinedMenuItem::separator(app)?, &item])?;
         }
         app.set_menu(menu)?;
         Ok(())
