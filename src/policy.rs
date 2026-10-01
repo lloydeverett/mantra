@@ -95,19 +95,26 @@ struct Hiding {
 impl Hiding {
     fn hide_at(&self, now: SystemTime) -> bool {
         let Some(since) = self.waiting else { return false };
-        let waited = now.duration_since(since).unwrap_or_default();
         let hides = match self.policy {
             Policy::None | Policy::Dim => false,
             Policy::Hide => true,
-            Policy::DimThenHide => waited >= HIDE_AFTER,
+            Policy::DimThenHide => waited(since, now) >= HIDE_AFTER,
         };
         hides && !self.snoozed
     }
 
     /// The page says waiting (again, if a prompt is cancelled) or not.
-    fn wait(&mut self, waiting: bool, now: SystemTime) {
+    /// Returns when the wait started, if this starts one.
+    fn wait(&mut self, waiting: bool, now: SystemTime) -> Option<SystemTime> {
+        let started = waiting && self.waiting.is_none();
         self.waiting = if waiting { self.waiting.or(Some(now)) } else { None };
+        self.waiting.filter(|_| started)
     }
+}
+
+/// How long it's been since `since`, or 0 if the clock has since been set back.
+fn waited(since: SystemTime, now: SystemTime) -> Duration {
+    now.duration_since(since).unwrap_or_default()
 }
 
 /// Call from `setup`, after dim::init and pin::init (which sets the app menu),
@@ -161,6 +168,11 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Hiding)) {
     }
 }
 
+/// Hides or shows other apps as time alone requires, with nothing else changed.
+fn refresh(app: &AppHandle) {
+    update(app, |_| {});
+}
+
 /// Brings back any hidden windows. Call as the app exits.
 pub fn exit() {
     let _ = specialfx::show_others();
@@ -170,11 +182,7 @@ pub fn exit() {
 #[tauri::command]
 pub fn waiting(app: AppHandle, waiting: bool) {
     let mut started = None;
-    update(&app, |hiding| {
-        let before = hiding.waiting;
-        hiding.wait(waiting, SystemTime::now());
-        started = hiding.waiting.filter(|_| before.is_none());
-    });
+    update(&app, |hiding| started = hiding.wait(waiting, SystemTime::now()));
     if let Some(since) = started {
         recheck_after(app, since);
     }
@@ -189,10 +197,10 @@ fn recheck_after(app: AppHandle, since: SystemTime) {
         if app.state::<Mutex<Hiding>>().lock().unwrap().waiting != Some(since) {
             return; // the session started
         }
-        if SystemTime::now().duration_since(since).unwrap_or_default() >= HIDE_AFTER {
+        if waited(since, SystemTime::now()) >= HIDE_AFTER {
             // On the main thread, like the menus' and the page's calls.
             let handle = app.clone();
-            let _ = app.run_on_main_thread(move || update(&handle, |_| {}));
+            let _ = app.run_on_main_thread(move || refresh(&handle));
             return;
         }
     });
@@ -327,7 +335,7 @@ mod tests {
     }
 
     #[test]
-    fn dim_then_hide_dims() {
+    fn only_dim_policies_dim() {
         assert!(Policy::Dim.dims());
         assert!(Policy::DimThenHide.dims());
         assert!(!Policy::None.dims());
@@ -337,12 +345,11 @@ mod tests {
     #[test]
     fn waiting_starts_once_and_ends_with_the_session() {
         let mut hiding = Hiding::default();
-        hiding.wait(true, at(10));
-        hiding.wait(true, at(20)); // a cancelled prompt: still the same wait
+        assert_eq!(hiding.wait(true, at(10)), Some(at(10)));
+        assert_eq!(hiding.wait(true, at(20)), None); // a cancelled prompt: still the same wait
         assert_eq!(hiding.waiting, Some(at(10)));
-        hiding.wait(false, at(30));
+        assert_eq!(hiding.wait(false, at(30)), None);
         assert_eq!(hiding.waiting, None);
-        hiding.wait(true, at(40));
-        assert_eq!(hiding.waiting, Some(at(40)));
+        assert_eq!(hiding.wait(true, at(40)), Some(at(40)));
     }
 }
