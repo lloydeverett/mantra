@@ -7,6 +7,8 @@
 //!   session nears its end.
 //! - Hide: every other app's windows are hidden (specialfx leaves system UI
 //!   alone) until the session starts.
+//! - Dim then Hide: as Dim, and once the round has waited 5 minutes, as Hide
+//!   too until the session starts.
 //!
 //! Picked from the Effects menu: in the app menu and the dock menu on
 //! macOS, and in the ⋮ menu (menu.rs) where that's shown. A snooze (snooze.rs)
@@ -15,6 +17,7 @@
 //! Every launch starts on Dim.
 
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, SystemTime};
 
 use specialfx::HideOthersOptions;
 use tauri::menu::{CheckMenuItem, Submenu};
@@ -28,9 +31,13 @@ pub enum Policy {
     #[default]
     Dim,
     Hide,
+    DimThenHide,
 }
 
-const ALL: [Policy; 3] = [Policy::None, Policy::Dim, Policy::Hide];
+const ALL: [Policy; 4] = [Policy::None, Policy::Dim, Policy::Hide, Policy::DimThenHide];
+
+/// How long Dim then Hide waits before it hides. Its labels say so too.
+const HIDE_AFTER: Duration = Duration::from_secs(5 * 60);
 
 /// Seconds the dimming takes to fade out or in as the policy changes.
 const FADE: f32 = 1.0;
@@ -46,6 +53,7 @@ impl Policy {
             Policy::None => "policy:none",
             Policy::Dim => "policy:dim",
             Policy::Hide => "policy:hide",
+            Policy::DimThenHide => "policy:dim-then-hide",
         }
     }
 
@@ -61,7 +69,13 @@ impl Policy {
             Policy::Dim => "Dim screens",
             Policy::Hide if cfg!(target_os = "macos") => "Hide Other Apps",
             Policy::Hide => "Hide other windows",
+            Policy::DimThenHide if cfg!(target_os = "macos") => "Dim for 5m \u{2192} Hide Other Apps",
+            Policy::DimThenHide => "Dim for 5m \u{2192} hide other windows",
         }
+    }
+
+    fn dims(self) -> bool {
+        matches!(self, Policy::Dim | Policy::DimThenHide)
     }
 }
 
@@ -69,14 +83,27 @@ impl Policy {
 #[derive(Default)]
 struct Hiding {
     policy: Policy,
-    /// From the mantra's appearing until a session starts, as the page says.
-    waiting: bool,
+    /// Since when the round has been waiting: from the mantra's appearing
+    /// until a session starts, as the page says.
+    waiting: Option<SystemTime>,
     snoozed: bool,
 }
 
 impl Hiding {
-    fn hide(&self) -> bool {
-        self.policy == Policy::Hide && self.waiting && !self.snoozed
+    fn hide_at(&self, now: SystemTime) -> bool {
+        let Some(since) = self.waiting else { return false };
+        let waited = now.duration_since(since).unwrap_or_default();
+        let hides = match self.policy {
+            Policy::None | Policy::Dim => false,
+            Policy::Hide => true,
+            Policy::DimThenHide => waited >= HIDE_AFTER,
+        };
+        hides && !self.snoozed
+    }
+
+    /// The page says waiting (again, if a prompt is cancelled) or not.
+    fn wait(&mut self, waiting: bool, now: SystemTime) {
+        self.waiting = if waiting { self.waiting.or(Some(now)) } else { None };
     }
 }
 
@@ -105,7 +132,7 @@ pub fn submenu<R: Runtime, M: Manager<R>>(manager: &M) -> tauri::Result<Submenu<
 
 fn set(app: &AppHandle, policy: Policy) {
     update(app, |hiding| hiding.policy = policy);
-    app.state::<Arc<Dimmer>>().policy(vec![(FADE, if policy == Policy::Dim { 1.0 } else { 0.0 })]);
+    app.state::<Arc<Dimmer>>().policy(vec![(FADE, if policy.dims() { 1.0 } else { 0.0 })]);
     // A clicked item toggles its own check, even when it was already checked.
     platform::check(app, policy);
 }
@@ -120,7 +147,7 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Hiding)) {
     let mut hiding = state.lock().unwrap();
     change(&mut hiding);
     // Both are no-ops when there's no change to make.
-    let result = if hiding.hide() { specialfx::hide_others(&HideOthersOptions::default()) } else { specialfx::show_others() };
+    let result = if hiding.hide_at(SystemTime::now()) { specialfx::hide_others(&HideOthersOptions::default()) } else { specialfx::show_others() };
     if let Err(e) = result {
         eprintln!("window hiding unavailable: {e}");
     }
@@ -134,7 +161,33 @@ pub fn exit() {
 /// Whether the round is waiting: from the mantra's appearing until a session starts.
 #[tauri::command]
 pub fn waiting(app: AppHandle, waiting: bool) {
-    update(&app, |hiding| hiding.waiting = waiting);
+    let mut started = None;
+    update(&app, |hiding| {
+        let before = hiding.waiting;
+        hiding.wait(waiting, SystemTime::now());
+        started = hiding.waiting.filter(|_| before.is_none());
+    });
+    if let Some(since) = started {
+        recheck_after(app, since);
+    }
+}
+
+/// Brings hiding up to date once this wait has gone on for HIDE_AFTER, for
+/// Dim then Hide (and in case it's picked meanwhile). Polled against the wall
+/// clock, as sleep()'s clock stops while a Mac sleeps.
+fn recheck_after(app: AppHandle, since: SystemTime) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_secs(1));
+        if app.state::<Mutex<Hiding>>().lock().unwrap().waiting != Some(since) {
+            return; // the session started
+        }
+        if SystemTime::now().duration_since(since).unwrap_or_default() >= HIDE_AFTER {
+            // On the main thread, like the menus' and the page's calls.
+            let handle = app.clone();
+            let _ = app.run_on_main_thread(move || update(&handle, |_| {}));
+            return;
+        }
+    });
 }
 
 #[cfg(target_os = "macos")]
@@ -201,6 +254,8 @@ mod platform {
 
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, UNIX_EPOCH};
+
     use super::*;
 
     #[test]
@@ -217,27 +272,69 @@ mod tests {
         }
     }
 
+    fn at(secs: u64) -> SystemTime {
+        UNIX_EPOCH + Duration::from_secs(secs)
+    }
+
+    fn hiding(policy: Policy, waiting: Option<u64>, snoozed: bool) -> Hiding {
+        Hiding { policy, waiting: waiting.map(at), snoozed }
+    }
+
     #[test]
     fn starts_dimming_without_hiding() {
-        let hiding = Hiding { waiting: true, ..Hiding::default() };
+        let hiding = Hiding { waiting: Some(at(0)), ..Hiding::default() };
         assert_eq!(hiding.policy, Policy::Dim);
-        assert!(!hiding.hide());
+        assert!(!hiding.hide_at(at(0)));
     }
 
     #[test]
     fn hides_while_waiting_under_hide() {
-        assert!(Hiding { policy: Policy::Hide, waiting: true, snoozed: false }.hide());
+        assert!(hiding(Policy::Hide, Some(0), false).hide_at(at(0)));
     }
 
     #[test]
     fn shows_during_a_session_or_snooze() {
-        assert!(!Hiding { policy: Policy::Hide, waiting: false, snoozed: false }.hide());
-        assert!(!Hiding { policy: Policy::Hide, waiting: true, snoozed: true }.hide());
+        assert!(!hiding(Policy::Hide, None, false).hide_at(at(0)));
+        assert!(!hiding(Policy::Hide, Some(0), true).hide_at(at(0)));
     }
 
     #[test]
-    fn only_hide_hides() {
-        assert!(!Hiding { policy: Policy::None, waiting: true, snoozed: false }.hide());
-        assert!(!Hiding { policy: Policy::Dim, waiting: true, snoozed: false }.hide());
+    fn none_and_dim_never_hide() {
+        assert!(!hiding(Policy::None, Some(0), false).hide_at(at(3600)));
+        assert!(!hiding(Policy::Dim, Some(0), false).hide_at(at(3600)));
+    }
+
+    #[test]
+    fn dim_then_hide_hides_once_waiting_long_enough() {
+        let hiding = hiding(Policy::DimThenHide, Some(100), false);
+        assert!(!hiding.hide_at(at(100)));
+        assert!(!hiding.hide_at(at(100 + 299)));
+        assert!(hiding.hide_at(at(100 + 300)));
+    }
+
+    #[test]
+    fn dim_then_hide_shows_during_a_session_or_snooze() {
+        assert!(!hiding(Policy::DimThenHide, None, false).hide_at(at(3600)));
+        assert!(!hiding(Policy::DimThenHide, Some(0), true).hide_at(at(3600)));
+    }
+
+    #[test]
+    fn dim_then_hide_dims() {
+        assert!(Policy::Dim.dims());
+        assert!(Policy::DimThenHide.dims());
+        assert!(!Policy::None.dims());
+        assert!(!Policy::Hide.dims());
+    }
+
+    #[test]
+    fn waiting_starts_once_and_ends_with_the_session() {
+        let mut hiding = Hiding::default();
+        hiding.wait(true, at(10));
+        hiding.wait(true, at(20)); // a cancelled prompt: still the same wait
+        assert_eq!(hiding.waiting, Some(at(10)));
+        hiding.wait(false, at(30));
+        assert_eq!(hiding.waiting, None);
+        hiding.wait(true, at(40));
+        assert_eq!(hiding.waiting, Some(at(40)));
     }
 }

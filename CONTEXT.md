@@ -35,7 +35,7 @@ _Avoid_: Label, category, context
 The part of a round from the mantra's appearing until the session starts.
 
 **While Waiting policy**:
-What happens to the screens while waiting, picked from the Effects menu: None, Dim (the default: the screens darken until the mantra's typed, and again as the session nears its end), or Hide (every other app's windows are hidden until the session starts). Not kept across launches.
+What happens to the screens while waiting, picked from the Effects menu: None, Dim (the default: the screens darken until the mantra's typed, and again as the session nears its end), Hide (every other app's windows are hidden until the session starts), or Dim then Hide (Dim, then Hide as well once the round has waited 5 minutes). Not kept across launches.
 _Avoid_: Mode
 
 **Snooze**:

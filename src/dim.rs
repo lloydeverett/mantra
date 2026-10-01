@@ -1,7 +1,7 @@
 //! Screen dimming: a black specialfx overlay across every monitor, whose
 //! opacity follows a schedule set from the page with the `dim` command,
 //! scaled by a mask that a snooze (snooze.rs) fades out and back in, and by
-//! another that fades out when the While Waiting policy (policy.rs) isn't Dim.
+//! another that fades out when the While Waiting policy (policy.rs) doesn't dim.
 //!
 //! The fade runs here rather than in the page because the webview may throttle
 //! its frames while it's in the background, which is exactly when the break
